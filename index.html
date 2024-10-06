@@ -37,7 +37,7 @@
             resize: none; /* Disable resizing */
         }
         button {
-            padding: 10px 20px; /* Button padding */
+            padding: 10px; /* Button padding */
             font-size: 16px; /* Button text size */
             border: none; /* Remove default border */
             border-radius: 20px; /* More rounded corners */
@@ -55,7 +55,6 @@
         button::after {
             content: '➔'; /* Arrow symbol */
             font-size: 20px; /* Adjust size of the arrow */
-            margin-left: 8px; /* Space between text and arrow */
         }
         #response {
             margin-top: 20px; /* Space above response */
@@ -72,9 +71,10 @@
     <div class="container">
         <img src="https://raw.githubusercontent.com/Redtails74/ClipperAI-/main/Code%20Clipper%20Logo-01.jpg" alt="Logo" />
         <textarea id="prompt" placeholder="Enter your prompt here..."></textarea>
-        <button id="generate" onclick="generateResponse()">Generate Response</button>
+        <button id="generate" onclick="generateResponse()"></button> <!-- Button with only the arrow -->
         <div id="response"></div>
     </div>
     <script src="script.js"></script>
 </body>
 </html>
+
