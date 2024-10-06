@@ -5,9 +5,57 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>ClipperGPT</title>
     <link rel="stylesheet" href="styles.css">
+    <style>
+        body {
+            display: flex;
+            flex-direction: column;
+            align-items: center; /* Center content horizontally */
+            justify-content: center; /* Center content vertically */
+            height: 100vh; /* Full viewport height */
+            margin: 0; /* Remove default margin */
+            font-family: Arial, sans-serif; /* Add a default font */
+        }
+        .container {
+            text-align: center; /* Center text inside the container */
+        }
+        img {
+            max-width: 100px; /* Adjust the logo size */
+            margin-bottom: 20px; /* Space between logo and heading */
+        }
+        textarea {
+            width: 300px; /* Set a fixed width */
+            height: 100px; /* Set a fixed height */
+            margin: 10px 0; /* Space around the textarea */
+            padding: 10px; /* Inner padding */
+            font-size: 16px; /* Text size */
+            border-radius: 5px; /* Rounded corners */
+            border: 1px solid #ccc; /* Border color */
+        }
+        button {
+            padding: 10px 20px; /* Button padding */
+            font-size: 16px; /* Button text size */
+            border: none; /* Remove default border */
+            border-radius: 5px; /* Rounded corners */
+            background-color: #007bff; /* Button color */
+            color: white; /* Text color */
+            cursor: pointer; /* Pointer on hover */
+        }
+        button:hover {
+            background-color: #0056b3; /* Darken on hover */
+        }
+        #response {
+            margin-top: 20px; /* Space above response */
+            border: 1px solid #ccc; /* Border for response area */
+            padding: 10px; /* Inner padding */
+            width: 300px; /* Set a fixed width */
+            min-height: 50px; /* Minimum height */
+            border-radius: 5px; /* Rounded corners */
+        }
+    </style>
 </head>
 <body>
     <div class="container">
+        <img src="logo.png" alt="Logo" /> <!-- Add your logo image here -->
         <h1>ClipperGPT</h1>
         <textarea id="prompt" placeholder="Enter your prompt here..."></textarea>
         <button id="generate" onclick="generateResponse()">Generate Response</button>
@@ -16,3 +64,4 @@
     <script src="script.js"></script>
 </body>
 </html>
+
