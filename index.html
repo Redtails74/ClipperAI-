@@ -19,7 +19,7 @@
             text-align: center; /* Center text inside the container */
         }
         img {
-            max-width: 100px; /* Adjust the logo size */
+            max-width: 200px; /* Adjust the logo size larger */
             margin-bottom: 20px; /* Space between logo and heading */
         }
         textarea {
@@ -39,6 +39,7 @@
             background-color: #007bff; /* Button color */
             color: white; /* Text color */
             cursor: pointer; /* Pointer on hover */
+            margin: 5px; /* Space between buttons */
         }
         button:hover {
             background-color: #0056b3; /* Darken on hover */
@@ -54,6 +55,17 @@
     </style>
 </head>
 <body>
+    <div class="container">
+        <img src="https://raw.githubusercontent.com/Redtails74/ClipperAI-/main/Code%20Clipper%20Logo-01.jpg" alt="Logo" />
+        <h1>ClipperGPT</h1>
+        <textarea id="prompt" placeholder="Enter your prompt here..."></textarea>
+        <button id="generate" onclick="generateResponse()">Generate Response</button>
+        <div id="response"></div>
+    </div>
+    <script src="script.js"></script>
+</body>
+</html>
+
     <div class="container">
         <img src="https://raw.githubusercontent.com/Redtails74/ClipperAI-/main/Code%20Clipper%20Logo-01.jpg" alt="Logo" /> <!-- Add your logo image here -->
         <h1>ClipperGPT</h1>
