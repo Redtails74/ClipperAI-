@@ -6,6 +6,9 @@
     <title>ClipperGPT</title>
     <link rel="stylesheet" href="styles.css">
     <style>
+        /* Importing a Google Font similar to ChatGPT's */
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500&display=swap');
+
         body {
             display: flex;
             flex-direction: column;
@@ -13,36 +16,46 @@
             justify-content: center; /* Center content vertically */
             height: 100vh; /* Full viewport height */
             margin: 0; /* Remove default margin */
-            font-family: Arial, sans-serif; /* Add a default font */
+            font-family: 'Inter', sans-serif; /* Use the imported font */
         }
         .container {
             text-align: center; /* Center text inside the container */
         }
         img {
-            max-width: 200px; /* Adjust the logo size larger */
+            max-width: 200px; /* Adjust the logo size */
             margin-bottom: 20px; /* Space between logo and heading */
         }
         textarea {
             width: 300px; /* Set a fixed width */
             height: 100px; /* Set a fixed height */
             margin: 10px 0; /* Space around the textarea */
-            padding: 10px; /* Inner padding */
+            padding: 15px; /* Inner padding */
             font-size: 16px; /* Text size */
-            border-radius: 5px; /* Rounded corners */
+            border-radius: 20px; /* More rounded corners */
             border: 1px solid #ccc; /* Border color */
+            box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1); /* Subtle shadow */
+            resize: none; /* Disable resizing */
         }
         button {
             padding: 10px 20px; /* Button padding */
             font-size: 16px; /* Button text size */
             border: none; /* Remove default border */
-            border-radius: 5px; /* Rounded corners */
+            border-radius: 20px; /* More rounded corners */
             background-color: #007bff; /* Button color */
             color: white; /* Text color */
             cursor: pointer; /* Pointer on hover */
             margin: 5px; /* Space between buttons */
+            display: flex; /* Flexbox to center arrow */
+            align-items: center; /* Center arrow vertically */
+            justify-content: center; /* Center arrow horizontally */
         }
         button:hover {
             background-color: #0056b3; /* Darken on hover */
+        }
+        button::after {
+            content: '➔'; /* Arrow symbol */
+            font-size: 20px; /* Adjust size of the arrow */
+            margin-left: 8px; /* Space between text and arrow */
         }
         #response {
             margin-top: 20px; /* Space above response */
@@ -50,7 +63,8 @@
             padding: 10px; /* Inner padding */
             width: 300px; /* Set a fixed width */
             min-height: 50px; /* Minimum height */
-            border-radius: 5px; /* Rounded corners */
+            border-radius: 20px; /* More rounded corners */
+            box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1); /* Subtle shadow */
         }
     </style>
 </head>
