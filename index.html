@@ -3,78 +3,42 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>ClipperGPT</title>
     <link rel="stylesheet" href="styles.css">
     <style>
-        /* Importing a Google Font similar to ChatGPT's */
-        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500&display=swap');
-
-        body {
+        #app {
             display: flex;
             flex-direction: column;
-            align-items: center; /* Center content horizontally */
-            justify-content: center; /* Center content vertically */
-            height: 100vh; /* Full viewport height */
-            margin: 0; /* Remove default margin */
-            font-family: 'Inter', sans-serif; /* Use the imported font */
-        }
-        .container {
-            text-align: center; /* Center text inside the container */
+            align-items: center; /* Center content */
         }
         img {
-            max-width: 200px; /* Adjust the logo size */
-            margin-bottom: 20px; /* Space between logo and heading */
-        }
-        textarea {
-            width: 300px; /* Set a fixed width */
-            height: 100px; /* Set a fixed height */
-            margin: 10px 0; /* Space around the textarea */
-            padding: 15px; /* Inner padding */
-            font-size: 16px; /* Text size */
-            border-radius: 20px; /* More rounded corners */
-            border: 1px solid #ccc; /* Border color */
-            box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1); /* Subtle shadow */
-            resize: none; /* Disable resizing */
-        }
-        button {
-            padding: 10px; /* Button padding */
-            font-size: 16px; /* Button text size */
-            border: none; /* Remove default border */
-            border-radius: 20px; /* More rounded corners */
-            background-color: #007bff; /* Button color */
-            color: white; /* Text color */
-            cursor: pointer; /* Pointer on hover */
-            margin: 5px; /* Space between buttons */
-            display: flex; /* Flexbox to center arrow */
-            align-items: center; /* Center arrow vertically */
-            justify-content: center; /* Center arrow horizontally */
-        }
-        button:hover {
-            background-color: #0056b3; /* Darken on hover */
-        }
-        button::after {
-            content: '➔'; /* Arrow symbol */
-            font-size: 20px; /* Adjust size of the arrow */
-        }
-        #response {
-            margin-top: 20px; /* Space above response */
-            border: 1px solid #ccc; /* Border for response area */
-            padding: 10px; /* Inner padding */
-            width: 300px; /* Set a fixed width */
-            min-height: 50px; /* Minimum height */
-            border-radius: 20px; /* More rounded corners */
-            box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1); /* Subtle shadow */
+            max-width: 200px; /* Adjust logo size */
+            margin-bottom: 20px; /* Space below the logo */
         }
     </style>
 </head>
 <body>
-    <div class="container">
-        <img src="https://raw.githubusercontent.com/Redtails74/ClipperAI-/main/Code%20Clipper%20Logo-01.jpg" alt="Logo" />
-        <textarea id="prompt" placeholder="Enter your prompt here..."></textarea>
-        <button id="generate" onclick="generateResponse()"></button> <!-- Button with only the arrow -->
-        <div id="response"></div>
+    <div id="app">
+        <img src="https://raw.githubusercontent.com/Redtails74/ClipperAI-/main/Code%20Clipper%20Logo-01.jpg" alt="Logo" /> <!-- Replace with your logo path -->
+        <textarea id="input" placeholder="Type your message..."></textarea>
+        <button id="send">Send</button>
+        <div id="chat"></div>
     </div>
-    <script src="script.js"></script>
+    <script>
+        document.getElementById('send').addEventListener('click', async () => {
+            const input = document.getElementById('input').value;
+            const response = await fetch('/api/chat', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({ message: input })
+            });
+            const data = await response.json();
+            document.getElementById('chat').innerHTML += `<div>User: ${input}</div>`;
+            document.getElementById('chat').innerHTML += `<div>ChatGPT: ${data.response}</div>`;
+            document.getElementById('input').value = ''; // Clear input
+        });
+    </script>
 </body>
 </html>
 
