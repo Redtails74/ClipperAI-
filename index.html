@@ -41,24 +41,33 @@
     </div>
     <script>
         document.getElementById('send').addEventListener('click', async () => {
-            const input = document.getElementById('input').value;
-            const response = await fetch('http://134.209.213.182:5000/api/chat', {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json'
-                },
-                body: JSON.stringify({ message: input })
-            });
+    const input = document.getElementById('input').value;
+    document.getElementById('chat').innerHTML += `<div>User: ${input}</div>`;
+    
+    document.getElementById('output').innerText = "Loading..."; // Show loading message
 
-            if (response.ok) {
-                const data = await response.json();
-                document.getElementById('chat').innerHTML += `<div>User: ${input}</div>`;
-                document.getElementById('chat').innerHTML += `<div>ChatGPT: ${data.response}</div>`;
-                document.getElementById('input').value = ''; // Clear input
-            } else {
-                console.error('Error:', response.statusText);
-            }
+    try {
+        const response = await fetch('http://134.209.213.182:5000/api/chat', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({ message: input })
         });
+
+        if (response.ok) {
+            const data = await response.json();
+            document.getElementById('chat').innerHTML += `<div>ChatGPT: ${data.response}</div>`;
+        } else {
+            document.getElementById('chat').innerHTML += `<div>Error: ${response.statusText}</div>`;
+        }
+    } catch (error) {
+        document.getElementById('chat').innerHTML += `<div>Error: ${error.message}</div>`;
+    }
+
+    document.getElementById('input').value = ''; // Clear input
+    document.getElementById('output').innerText = ""; // Clear loading message
+});
 
         async function fetchData() {
             try {
