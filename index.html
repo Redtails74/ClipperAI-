@@ -42,7 +42,7 @@
     <script>
         document.getElementById('send').addEventListener('click', async () => {
             const input = document.getElementById('input').value;
-            const response = await fetch('http://your-droplet-ip:5000/api/chat', {
+            const response = await fetch('http://134.209.213.182:5000/api/chat', {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json'
@@ -62,7 +62,7 @@
 
         async function fetchData() {
             try {
-                const response = await fetch('http://your-droplet-ip:5000/api/data');
+                const response = await fetch('http://134.209.213.182:5000/api/data');
                 const data = await response.json();
                 document.getElementById('output').innerText = data.message;
             } catch (error) {
