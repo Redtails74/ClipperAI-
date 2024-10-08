@@ -5,6 +5,9 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <link rel="stylesheet" href="styles.css">
     <style>
+        * {
+            box-sizing: border-box; /* Include padding and border in element's total width and height */
+        }
         #app {
             display: flex;
             flex-direction: column;
@@ -41,33 +44,32 @@
     </div>
     <script>
         document.getElementById('send').addEventListener('click', async () => {
-    const input = document.getElementById('input').value;
-    document.getElementById('chat').innerHTML += `<div>User: ${input}</div>`;
-    
-    document.getElementById('output').innerText = "Loading..."; // Show loading message
+            const input = document.getElementById('input').value;
+            document.getElementById('chat').innerHTML += `<div>User: ${input}</div>`;
+            document.getElementById('output').innerText = "Loading..."; // Show loading message
 
-    try {
-        const response = await fetch('http://134.209.213.182:5000/api/chat', {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json'
-            },
-            body: JSON.stringify({ message: input })
+            try {
+                const response = await fetch('http://134.209.213.182:5000/api/chat', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({ message: input })
+                });
+
+                if (response.ok) {
+                    const data = await response.json();
+                    document.getElementById('chat').innerHTML += `<div>ChatGPT: ${data.response}</div>`;
+                } else {
+                    document.getElementById('chat').innerHTML += `<div>Error: ${response.statusText}</div>`;
+                }
+            } catch (error) {
+                document.getElementById('chat').innerHTML += `<div>Error: Something went wrong. Please try again later.</div>`;
+            }
+
+            document.getElementById('input').value = ''; // Clear input
+            document.getElementById('output').innerText = ""; // Clear loading message
         });
-
-        if (response.ok) {
-            const data = await response.json();
-            document.getElementById('chat').innerHTML += `<div>ChatGPT: ${data.response}</div>`;
-        } else {
-            document.getElementById('chat').innerHTML += `<div>Error: ${response.statusText}</div>`;
-        }
-    } catch (error) {
-        document.getElementById('chat').innerHTML += `<div>Error: ${error.message}</div>`;
-    }
-
-    document.getElementById('input').value = ''; // Clear input
-    document.getElementById('output').innerText = ""; // Clear loading message
-});
 
         async function fetchData() {
             try {
@@ -76,6 +78,7 @@
                 document.getElementById('output').innerText = data.message;
             } catch (error) {
                 console.error('Error fetching data:', error);
+                document.getElementById('output').innerText = "Error fetching data.";
             }
         }
 
