@@ -1,5 +1,5 @@
 from flask import Flask, request, jsonify
-from huggingface_hub import Inferenceclient
+from huggingface_hub import InferenceClient
 
 app = Flask(__name__)
 
