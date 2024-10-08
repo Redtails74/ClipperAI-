@@ -1,5 +1,5 @@
 from flask import Flask, request, jsonify
-from huggingface_hub import InferenceApi
+from huggingface_hub import Inferenceclient
 
 app = Flask(__name__)
 
@@ -8,7 +8,7 @@ API_KEY = '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'
 
 # Load the Inference API for a model (e.g., GPT-2)
 model_name = 'gpt2'  # Change this to a different model if desired
-inference = InferenceApi(model=model_name, token=API_KEY)
+inference = InferenceClient(model=model_name, token=API_KEY)
 
 @app.route('/chat', methods=['POST'])
 def chat():
