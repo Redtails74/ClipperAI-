@@ -1,26 +1,23 @@
 from flask import Flask, request, jsonify
-from transformers import GPT2LMHeadModel, GPT2Tokenizer
+from huggingface_hub import InferenceApi
 
 app = Flask(__name__)
 
-# Load pre-trained model and tokenizer
-model_name = 'gpt2'  # You can change this to a different model if desired
-tokenizer = GPT2Tokenizer.from_pretrained(model_name)
-model = GPT2LMHeadModel.from_pretrained(model_name)
+# Set your Hugging Face API key
+API_KEY = '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'
+
+# Load the Inference API for a model (e.g., GPT-2)
+model_name = 'gpt2'  # Change this to a different model if desired
+inference = InferenceApi(model=model_name, token=API_KEY)
 
 @app.route('/chat', methods=['POST'])
 def chat():
     input_text = request.json.get('message')
     
-    # Encode the input text
-    input_ids = tokenizer.encode(input_text, return_tensors='pt')
-
-    # Generate a response from the model
-    output = model.generate(input_ids, max_length=50, num_return_sequences=1)
-
-    # Decode the output and return the response
-    response_text = tokenizer.decode(output[0], skip_special_tokens=True)
-    return jsonify({'response': response_text})
+    # Get response from Hugging Face Inference API
+    response = inference(input_text)
+    
+    return jsonify({'response': response})
 
 if __name__ == '__main__':
     app.run(debug=True)
