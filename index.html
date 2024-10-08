@@ -9,36 +9,68 @@
             display: flex;
             flex-direction: column;
             align-items: center; /* Center content */
+            max-width: 600px; /* Optional: Limit width */
+            margin: auto; /* Center the app */
         }
         img {
             max-width: 200px; /* Adjust logo size */
             margin-bottom: 20px; /* Space below the logo */
         }
+        textarea {
+            width: 100%; /* Full width */
+            height: 100px; /* Height of the textarea */
+            margin-bottom: 10px; /* Space below textarea */
+        }
+        #chat {
+            border: 1px solid #ccc; /* Optional: Add a border */
+            padding: 10px; /* Padding for the chat area */
+            width: 100%; /* Full width */
+            max-height: 300px; /* Limit height */
+            overflow-y: auto; /* Scroll if content exceeds height */
+        }
     </style>
+    <title>Chat Interface</title>
 </head>
 <body>
     <div id="app">
-        <img src="https://raw.githubusercontent.com/Redtails74/ClipperAI-/main/Code%20Clipper%20Logo-01.jpg" alt="Logo" /> <!-- Replace with your logo path -->
+        <img src="https://raw.githubusercontent.com/Redtails74/ClipperAI-/main/Code%20Clipper%20Logo-01.jpg" alt="Logo" />
         <textarea id="input" placeholder="Type your message..."></textarea>
         <button id="send">Send</button>
         <div id="chat"></div>
+        <p id="output">Loading...</p>
     </div>
     <script>
         document.getElementById('send').addEventListener('click', async () => {
             const input = document.getElementById('input').value;
-            const response = await fetch('/api/chat', {
+            const response = await fetch('http://your-droplet-ip:5000/api/chat', {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json'
                 },
                 body: JSON.stringify({ message: input })
             });
-            const data = await response.json();
-            document.getElementById('chat').innerHTML += `<div>User: ${input}</div>`;
-            document.getElementById('chat').innerHTML += `<div>ChatGPT: ${data.response}</div>`;
-            document.getElementById('input').value = ''; // Clear input
+
+            if (response.ok) {
+                const data = await response.json();
+                document.getElementById('chat').innerHTML += `<div>User: ${input}</div>`;
+                document.getElementById('chat').innerHTML += `<div>ChatGPT: ${data.response}</div>`;
+                document.getElementById('input').value = ''; // Clear input
+            } else {
+                console.error('Error:', response.statusText);
+            }
         });
+
+        async function fetchData() {
+            try {
+                const response = await fetch('http://your-droplet-ip:5000/api/data');
+                const data = await response.json();
+                document.getElementById('output').innerText = data.message;
+            } catch (error) {
+                console.error('Error fetching data:', error);
+            }
+        }
+
+        document.addEventListener('DOMContentLoaded', fetchData);
     </script>
 </body>
 </html>
-
