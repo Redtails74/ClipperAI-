@@ -19,10 +19,16 @@ def get_data():
 def chat():
     input_text = request.json.get('message')
     
+    if not input_text:
+        return jsonify({'error': 'No input message provided.'}), 400
+
     # Get response from Hugging Face Inference API
-    response = inference(input_text)
-    
-    return jsonify({'response': response})
+    try:
+        response = inference(input_text)
+        response_text = response['generated_text']  # Adjust based on actual response structure
+        return jsonify({'response': response_text})
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
 
 if __name__ == '__main__':
     app.run(host='0.0.0.0', port=5000, debug=True)
