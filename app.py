@@ -6,7 +6,7 @@ import os  # Make sure to import os
 from flask_cors import CORS
 
 app = Flask(__name__)
-CORS(app, origins=["https://Redtails74.github.io"])  # Ensure this is correctly formatted
+CORS(app, origins=["https://Redtails74.github.io","http://localhost:3000"])  # Ensure this is correctly formatted
 
 # Set your Hugging Face API key (consider using environment variables for security)
 API_KEY = os.getenv('HUGGINGFACE_API_KEY', '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')  # Fallback to hardcoded value (not recommended for production)
