@@ -4,35 +4,40 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <link rel="stylesheet" href="styles.css">
+    <title>Chat Interface</title>
     <style>
+        /* Global styles */
         * {
-            box-sizing: border-box; /* Include padding and border in element's total width and height */
+            box-sizing: border-box; /* Include padding and border in total width/height */
         }
+        /* App container */
         #app {
             display: flex;
             flex-direction: column;
-            align-items: center; /* Center content */
-            max-width: 600px; /* Optional: Limit width */
+            align-items: center;
+            max-width: 600px; /* Limit width */
             margin: auto; /* Center the app */
         }
+        /* Logo styles */
         img {
             max-width: 200px; /* Adjust logo size */
-            margin-bottom: 20px; /* Space below the logo */
+            margin-bottom: 20px; /* Space below logo */
         }
+        /* Textarea styles */
         textarea {
             width: 100%; /* Full width */
-            height: 100px; /* Height of the textarea */
+            height: 100px; /* Height of textarea */
             margin-bottom: 10px; /* Space below textarea */
         }
+        /* Chat area styles */
         #chat {
-            border: 1px solid #ccc; /* Optional: Add a border */
-            padding: 10px; /* Padding for the chat area */
+            border: 1px solid #ccc; /* Border */
+            padding: 10px; /* Padding for chat area */
             width: 100%; /* Full width */
             max-height: 300px; /* Limit height */
             overflow-y: auto; /* Scroll if content exceeds height */
         }
     </style>
-    <title>Chat Interface</title>
 </head>
 <body>
     <div id="app">
@@ -42,11 +47,16 @@
         <div id="chat"></div>
         <p id="output">Loading...</p>
     </div>
+
     <script>
+        // Function to send user input and receive a response
         document.getElementById('send').addEventListener('click', async () => {
-            const input = document.getElementById('input').value;
+            const input = document.getElementById('input').value.trim();
+            if (!input) return; // Prevent empty input
+
+            // Update chat with user input and show loading message
             document.getElementById('chat').innerHTML += `<div>User: ${input}</div>`;
-            document.getElementById('output').innerText = "Loading..."; // Show loading message
+            document.getElementById('output').innerText = "Loading...";
 
             try {
                 const response = await fetch('http://134.209.213.182:5000/api/chat', {
@@ -59,7 +69,7 @@
 
                 if (response.ok) {
                     const data = await response.json();
-                    document.getElementById('chat').innerHTML += `<div>ChatGPT: ${data.response}</div>`;
+                    document.getElementById('chat').innerHTML += `<div>ChatGPT: ${data.generated_text}</div>`;
                 } else {
                     document.getElementById('chat').innerHTML += `<div>Error: ${response.statusText}</div>`;
                 }
@@ -67,10 +77,12 @@
                 document.getElementById('chat').innerHTML += `<div>Error: Something went wrong. Please try again later.</div>`;
             }
 
-            document.getElementById('input').value = ''; // Clear input
-            document.getElementById('output').innerText = ""; // Clear loading message
+            // Clear input and loading message
+            document.getElementById('input').value = '';
+            document.getElementById('output').innerText = "";
         });
 
+        // Function to fetch initial data
         async function fetchData() {
             try {
                 const response = await fetch('http://134.209.213.182:5000/api/data');
@@ -82,6 +94,7 @@
             }
         }
 
+        // Fetch initial data when the document is loaded
         document.addEventListener('DOMContentLoaded', fetchData);
     </script>
 </body>
