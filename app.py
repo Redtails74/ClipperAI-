@@ -5,11 +5,20 @@ from huggingface_hub import InferenceClient
 app = Flask(__name__)
 CORS(app)  # Enable CORS
 
-# Set your Hugging Face API key
-API_KEY = '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'
+from huggingface_hub import InferenceClient
+import os
+
+# Set your Hugging Face API key (consider using environment variables for security)
+API_KEY = os.getenv('HUGGINGFACE_API_KEY', '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')  # Fallback to hardcoded value (not recommended for production)
+
 # Load the Inference API for a model (e.g., GPT-2)
 model_name = 'gpt2'  # Change this to a different model if desired
 inference = InferenceClient(model=model_name, token=API_KEY)
+
+# Example usage
+response = inference("Your input text here")
+print(response)
+
 
 @app.route('/api/data', methods=['GET'])
 def get_data():
