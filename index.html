@@ -69,7 +69,7 @@
 
                 if (response.ok) {
                     const data = await response.json();
-                    document.getElementById('chat').innerHTML += `<div>ChatGPT: ${data.generated_text}</div>`;
+                    document.getElementById('chat').innerHTML += `<div>ChatGPT: ${data.response}</div>`;
                 } else {
                     document.getElementById('chat').innerHTML += `<div>Error: ${response.statusText}</div>`;
                 }
