@@ -20,7 +20,7 @@ print(dir(inference))
 
 @app.route('/api/data', methods=['GET'])
 def get_data():
-    return jsonify(message="Hello from Flask!")
+    return jsonify({'response': response_text})
 
 @app.route('/api/chat', methods=['POST'])
 def chat():
