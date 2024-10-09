@@ -4,7 +4,7 @@ from huggingface_hub import InferenceClient
 import os  # Make sure to import os
 
 app = Flask(__name__)
-CORS(app)  # Enable CORS
+CORS(app) origins=["https://clipper.ai"]) 
 
 # Set your Hugging Face API key (consider using environment variables for security)
 API_KEY = os.getenv('HUGGINGFACE_API_KEY', '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')  # Fallback to hardcoded value (not recommended for production)
