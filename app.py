@@ -16,7 +16,7 @@ model_name = 'gpt2'  # Change this to a different model if desired
 inference = InferenceClient(model=model_name, token=API_KEY)
 
 # Example usage
-response = inference("Your input text here")
+response = inference.predict(input_text)
 print(response)
 
 
