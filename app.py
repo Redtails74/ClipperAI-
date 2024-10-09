@@ -5,8 +5,11 @@ from huggingface_hub import InferenceClient
 app = Flask(__name__)
 CORS(app)  # Enable CORS
 
-from huggingface_hub import InferenceClient
-import os
+arameters = {}  # Set your parameters
+inference = InferenceClient(parameters)
+
+# Print available methods
+print(dir(inference))
 
 # Set your Hugging Face API key (consider using environment variables for security)
 API_KEY = os.getenv('HUGGINGFACE_API_KEY', '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')  # Fallback to hardcoded value (not recommended for production)
