@@ -3,19 +3,18 @@ from flask_cors import CORS
 from huggingface_hub import InferenceClient
 import os
 
+# Initialize Flask app
 app = Flask(__name__)
 CORS(app, resources={r"/api/*": {"origins": "*"}})
 
-# Set up Hugging Face API key
+# Set up Hugging Face API key and model
 API_KEY = os.getenv('HUGGINGFACE_API_KEY', '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')
-
-# Load the Inference API for a model (e.g., GPT-2)
 model_name = 'gpt2'  # Change this to a different model if desired
 inference = InferenceClient(model=model_name, token=API_KEY)
 
 @app.route('/')
 def index():
-    return send_from_directory('.', 'index.html')  # If index.html is in the same directory as app.py
+    return send_from_directory('.', 'index.html')  # Serve index.html from the current directory
 
 @app.route('/api/data', methods=['GET'])
 def get_data():
@@ -31,7 +30,7 @@ def chat():
 
     # Call Hugging Face API
     try:
-        response = inference(user_message)  # This should call the model
+        response = inference(user_message)  # Call the model with the user message
         response_text = response.get('generated_text', 'Error: No response from model')
         return jsonify({'response': response_text})
     except Exception as e:
