@@ -15,7 +15,7 @@ inference = InferenceClient(model=model_name, token=API_KEY)
 
 @app.route('/')
 def index():
-    return send_from_directory('ClipperAI-', 'index.html')
+    return send_from_directory('.', 'index.html')  # If index.html is in the same directory as app.py
 
 @app.route('/api/data', methods=['GET'])
 def get_data():
