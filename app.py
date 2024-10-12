@@ -1,36 +1,39 @@
-from flask import Flask, request, jsonify
+from flask import Flask, request, jsonify, render_template
 from flask_cors import CORS
 from huggingface_hub import InferenceClient
-import os  # Make sure to import os
+import os
 
 app = Flask(__name__)
 CORS(app, resources={r"/api/*": {"origins": "*"}})
 
-# Set your Hugging Face API key (consider using environment variables for security)
+# Set up Hugging Face API key
 API_KEY = os.getenv('HUGGINGFACE_API_KEY', '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')  # Fallback to hardcoded value (not recommended for production)
 
 # Load the Inference API for a model (e.g., GPT-2)
 model_name = 'gpt2'  # Change this to a different model if desired
 inference = InferenceClient(model=model_name, token=API_KEY)
 
-# Print available methods (can be commented out in production)
-print(dir(inference))
+@app.route('/')
+def index():
+    return render_template('index.html')
 
 @app.route('/api/data', methods=['GET'])
 def get_data():
-    return jsonify({'response': response_text})
+    # Example response; you can customize this based on your needs
+    return jsonify({'message': 'Hello, World!'})
 
 @app.route('/api/chat', methods=['POST'])
 def chat():
-    input_text = request.json.get('message')
-    
-    if not input_text:
+    data = request.get_json()
+    user_message = data.get('message', '')
+
+    if not user_message:
         return jsonify({'error': 'No input message provided.'}), 400
 
-    # Get response from Hugging Face Inference API
+    # Call Hugging Face API
     try:
-        response = inference(input_text)  # Change from `inference.predict` to direct call
-        response_text = response['generated_text']  # Adjust based on actual response structure
+        response = inference(user_message)  # Direct call to inference
+        response_text = response.get('generated_text', 'Error: No response from model')
         return jsonify({'response': response_text})
     except Exception as e:
         return jsonify({'error': str(e)}), 500
