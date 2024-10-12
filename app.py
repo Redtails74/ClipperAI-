@@ -31,10 +31,11 @@ def chat():
 
     # Call Hugging Face API
     try:
-        response = inference(user_message)
+        response = inference(user_message)  # This should call the model
         response_text = response.get('generated_text', 'Error: No response from model')
         return jsonify({'response': response_text})
     except Exception as e:
+        print(f"Error in /api/chat: {e}")  # Log the error for debugging
         return jsonify({'error': str(e)}), 500
 
 if __name__ == '__main__':
