@@ -1,4 +1,4 @@
-from flask import Flask, request, jsonify, send_from_directory
+from flask import Flask, request, jsonify, redirect
 from flask_cors import CORS
 from huggingface_hub import InferenceClient
 import os
@@ -15,7 +15,7 @@ inference = InferenceClient(model=model_name, token=API_KEY)
 # Redirect to GitHub Pages
 @app.route('/')
 def index():
-    return redirect('https://Redtails74.github.io/ClipperAI/index.html')  # Replace with your actual URL
+    return redirect('https://Redtails74.github.io/ClipperAI-/index.html')
 
 @app.route('/api/data', methods=['GET'])
 def get_data():
