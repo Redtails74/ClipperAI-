@@ -12,9 +12,10 @@ API_KEY = os.getenv('HUGGINGFACE_API_KEY', 'hf_rfpFSbZHoucCwpUKURHVQVwBkbwvtdvNF
 model_name = 'gpt2'  # Change this to a different model if desired
 inference = InferenceClient(model=model_name, token=API_KEY)
 
+# Redirect to GitHub Pages
 @app.route('/')
 def index():
-    return send_from_directory('.', 'index.html')  # Serve index.html from the current directory
+    return redirect('https://Redtails74.github.io/ClipperAI/index.html')  # Replace with your actual URL
 
 @app.route('/api/data', methods=['GET'])
 def get_data():
