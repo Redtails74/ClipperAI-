@@ -1,4 +1,4 @@
-from flask import Flask, request, jsonify, render_template
+from flask import Flask, request, jsonify, send_from_directory
 from flask_cors import CORS
 from huggingface_hub import InferenceClient
 import os
@@ -15,7 +15,7 @@ inference = InferenceClient(model=model_name, token=API_KEY)
 
 @app.route('/')
 def index():
-    return render_template('index.html')
+    return send_from_directory('index.html')
 
 @app.route('/api/data', methods=['GET'])
 def get_data():
