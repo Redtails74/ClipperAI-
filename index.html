@@ -59,23 +59,29 @@
             document.getElementById('output').innerText = "Loading...";
 
             try {
-                const response = await fetch('http://134.209.213.182:5000/api/chat', {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json'
-                    },
-                    body: JSON.stringify({ message: input })
-                });
+  const response = await fetch('http://134.209.213.182:5000/api/chat', {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json'
+    },
+    body: JSON.stringify({ message: input })
+  });
 
-                if (response.ok) {
-                    const data = await response.json();
-                    document.getElementById('chat').innerHTML += `<div>ChatGPT: ${data.response}</div>`;
-                } else {
-                    document.getElementById('chat').innerHTML += `<div>Error: ${response.statusText}</div>`;
-                }
-            } catch (error) {
-                document.getElementById('chat').innerHTML += `<div>Error: Something went wrong. Please try again later.</div>`;
-            }
+  // Add console.log here
+  console.log('Response:', response);
+
+  if (response.ok) {
+    const data = await response.json();
+    document.getElementById('chat').innerHTML += `<div>ChatGPT: ${data.response}</div>`;
+  } else {
+    document.getElementById('chat').innerHTML += `<div>Error: ${response.statusText}</div>`;
+  }
+} catch (error) {
+  // Add console.log here
+  console.log('Error:', error);
+
+  document.getElementById('chat').innerHTML += `<div>Error: Something went wrong. Please try again later.</div>`;
+}
 
             // Clear input and loading message
             document.getElementById('input').value = '';
@@ -89,6 +95,7 @@
                 const data = await response.json();
                 document.getElementById('output').innerText = data.message;
             } catch (error) {
+              
                 console.error('Error fetching data:', error);
                 document.getElementById('output').innerText = "Error fetching data.";
             }
