@@ -3,8 +3,6 @@ from flask_cors import CORS
 from huggingface_hub import InferenceClient
 import os  # Make sure to import os
 
-from flask_cors import CORS
-
 app = Flask(__name__)
 CORS(app, resources={r"/api/*": {"origins": "*"}})
 
