@@ -59,7 +59,7 @@
         document.getElementById('output').innerText = "Loading...";
 
         try {
-            const response = await fetch('http://clipper.ai/api/chat', {
+            const response = await fetch('http://134.209.213.182:8000/api/chat', {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json'
@@ -85,7 +85,7 @@
     // Function to fetch initial data
     async function fetchData() {
         try {
-            const response = await fetch('http://clipper.ai/api/data'); // Change to a GET endpoint
+            const response = await fetch('http://134.209.213.182:8000/api/data'); // Change to a GET endpoint
             if (response.ok) {
                 const data = await response.json();
                 document.getElementById('output').innerText = data.message;
