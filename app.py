@@ -7,7 +7,7 @@ app = Flask(__name__)
 CORS(app, resources={r"/api/*": {"origins": "*"}})
 
 # Set up Hugging Face API key
-API_KEY = os.getenv('HUGGINGFACE_API_KEY', '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')  # Fallback to hardcoded value (not recommended for production)
+API_KEY = os.getenv('HUGGINGFACE_API_KEY', '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')
 
 # Load the Inference API for a model (e.g., GPT-2)
 model_name = 'gpt2'  # Change this to a different model if desired
@@ -19,7 +19,6 @@ def index():
 
 @app.route('/api/data', methods=['GET'])
 def get_data():
-    # Example response; you can customize this based on your needs
     return jsonify({'message': 'Hello, World!'})
 
 @app.route('/api/chat', methods=['POST'])
@@ -32,7 +31,7 @@ def chat():
 
     # Call Hugging Face API
     try:
-        response = inference(user_message)  # Direct call to inference
+        response = inference(user_message)
         response_text = response.get('generated_text', 'Error: No response from model')
         return jsonify({'response': response_text})
     except Exception as e:
@@ -40,4 +39,3 @@ def chat():
 
 if __name__ == '__main__':
     app.run(host='0.0.0.0', port=5000, debug=True)
-
