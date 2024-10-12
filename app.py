@@ -5,7 +5,7 @@ import os
 
 # Initialize Flask app
 app = Flask(__name__)
-CORS(app, resources={r"/api/*": {"origins": "https://https://Redtails74.github.io/ClipperAI-"}})
+CORS(app, resources={r"/api/*": {"origins": "https://Redtails74.github.io/ClipperAI-"}})
 
 # Set up Hugging Face API key and model
 API_KEY = os.getenv('HUGGINGFACE_API_KEY', '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')
@@ -38,5 +38,6 @@ def chat():
         print(f"Error in /api/chat: {e}")  # Log the error for debugging
         return jsonify({'error': str(e)}), 500
 
-if __name__ == '__main__':
-    app.run(host='0.0.0.0', port=5000, debug=True)
+# Note: Remove the block below for Gunicorn
+# if __name__ == '__main__':
+#     app.run(host='0.0.0.0', port=5000, debug=True)
