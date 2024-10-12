@@ -49,52 +49,57 @@
     </div>
 
     <script>
-        // Function to send user input and receive a response
-        document.getElementById('send').addEventListener('click', async () => {
-            const input = document.getElementById('input').value.trim();
-            if (!input) return; // Prevent empty input
+    // Function to send user input and receive a response
+    document.getElementById('send').addEventListener('click', async () => {
+        const input = document.getElementById('input').value.trim();
+        if (!input) return; // Prevent empty input
 
-            // Update chat with user input and show loading message
-            document.getElementById('chat').innerHTML += `<div>User: ${input}</div>`;
-            document.getElementById('output').innerText = "Loading...";
+        // Update chat with user input
+        document.getElementById('chat').innerHTML += `<div>User: ${input}</div>`;
+        document.getElementById('output').innerText = "Loading...";
 
-            try {
-                const response = await fetch('http://clipper.ai/api/chat', {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json'
-                    },
-                    body: JSON.stringify({ message: input })
-                });
+        try {
+            const response = await fetch('http://clipper.ai/api/chat', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({ message: input })
+            });
 
-                if (response.ok) {
-                    const data = await response.json();
-                    document.getElementById('chat').innerHTML += `<div>ChatGPT: ${data.response}</div>`;
-                } else {
-                    document.getElementById('chat').innerHTML += `<div>Error: ${response.statusText}</div>`;
-                }
-            } catch (error) {
-                document.getElementById('chat').innerHTML += `<div>Error: Something went wrong. Please try again later.</div>`;
-            }
-
-            // Clear input and loading message
-            document.getElementById('input').value = '';
-            document.getElementById('output').innerText = "";
-        });
-
-        // Function to fetch initial data
-        async function fetchData() {
-            try {
-                const response = await fetch('http://clipper.ai/api/chat');
+            if (response.ok) {
                 const data = await response.json();
-                document.getElementById('output').innerText = data.message;
-            } catch (error) {
-                document.getElementById('output').innerText = "Error fetching data.";
+                document.getElementById('chat').innerHTML += `<div>ChatGPT: ${data.response}</div>`;
+            } else {
+                document.getElementById('chat').innerHTML += `<div>Error: ${response.statusText}</div>`;
             }
+        } catch (error) {
+            document.getElementById('chat').innerHTML += `<div>Error: ${error.message}</div>`;
         }
 
-        // Fetch initial data when the document is loaded
-        document.addEventListener('DOMContentLoaded', fetchData);
-    </script>
+        // Clear input and loading message
+        document.getElementById('input').value = '';
+        document.getElementById('output').innerText = "";
+    });
+
+    // Function to fetch initial data
+    async function fetchData() {
+        try {
+            const response = await fetch('http://clipper.ai/api/data'); // Change to a GET endpoint
+            if (response.ok) {
+                const data = await response.json();
+                document.getElementById('output').innerText = data.message;
+            } else {
+                document.getElementById('output').innerText = "Error fetching data.";
+            }
+        } catch (error) {
+            document.getElementById('output').innerText = "Error fetching data.";
+        }
+    }
+
+    // Fetch initial data when the document is loaded
+    document.addEventListener('DOMContentLoaded', fetchData);
+</script>
+
 </body>
 </html>
