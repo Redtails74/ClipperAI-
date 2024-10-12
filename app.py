@@ -30,7 +30,7 @@ def chat():
 
     # Call Hugging Face API
     try:
-        response = inference(user_message)  # Call the model with the user message
+        response = inference.predict(user_message)  # Use the correct method for inference
         response_text = response.get('generated_text', 'Error: No response from model')
         return jsonify({'response': response_text})
     except Exception as e:
