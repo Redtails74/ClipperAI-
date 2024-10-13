@@ -98,6 +98,8 @@
             if (response.ok) {
                 const data = await response.json();
                 updateChat('ChatGPT', data.response);
+                // Redirect to GitHub Pages after a successful response
+                window.location.href = 'https://codeclippers.com';
             } else {
                 updateChat('Error', response.statusText);
             }
