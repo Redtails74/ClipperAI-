@@ -41,7 +41,7 @@ def answer_question():
 # Redirect to GitHub Pages
 @app.route('/')
 def index():
-    return redirect('https://Redtails74.github.io/ClipperAI-/index.html')
+    return redirect('https://redtails74.github.io/ClipperAI-/index.html')
 
 @app.route('/api/data', methods=['GET'])
 def get_data():
@@ -58,7 +58,6 @@ def chat():
         response_text = response.get('generated_text', 'Error: No response from model')
         return jsonify({'response': response_text})
     except Exception as e:
-        print(f"Error in /api/chat: {e}")  # Log the error for debugging
         return jsonify({'error': str(e)}), 500
 
 if __name__ == '__main__':
