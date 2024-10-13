@@ -25,7 +25,7 @@ def query_huggingface_api(model, payload):
 @app.route('/')
 def home():
     return send_from_directory('.', 'index.html')  # Serve index.html from the main directory
-
+    
 @app.route('/api/chat', methods=['POST'])
 def chat():
     user_message = request.json.get('message', '')
@@ -33,12 +33,12 @@ def chat():
         return jsonify({'error': 'No input message provided.'}), 400
 
     try:
-        # Call the model using the correct method
-        response = inference(user_message)  # Use __call__ method implicitly
-        response_text = response['generated_text'] if 'generated_text' in response else 'Error: No response from model'
+        # Use the correct method to get a response
+        response = inference.predict(user_message)
+        response_text = response.get('generated_text', 'Error: No response from model')
         return jsonify({'response': response_text})
     except Exception as e:
         return jsonify({'error': str(e)}), 500
-        
+
 if __name__ == '__main__':
     app.run(debug=True, host='0.0.0.0', port=8000)
