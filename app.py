@@ -32,9 +32,9 @@ def chat():
         return jsonify({'error': 'No input message provided.'}), 400
 
     try:
-        # Use the __call__ method to get a response
-        response = inference(user_message)
-        response_text = response.get('generated_text', 'Error: No response from model')
+        # Using the call method correctly
+        response = inference([user_message])  # Pass as a list
+        response_text = response[0]['generated_text']  # Extract the generated text
         return jsonify({'response': response_text})
     except Exception as e:
         return jsonify({'error': str(e)}), 500
