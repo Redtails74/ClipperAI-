@@ -6,7 +6,7 @@ import requests
 
 # Initialize Flask app
 app = Flask(__name__)
-CORS(app, resources={r"/api/*": {"origins": "https://redtails74.github.io"}})
+CORS(app, resources={r"/api/*": {"origins": "*"}})
 
 # Set up Hugging Face API key and model
 API_KEY = os.getenv('HUGGINGFACE_API_KEY', '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')
