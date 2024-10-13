@@ -87,7 +87,7 @@
         document.getElementById('output').innerText = "Loading...";
 
         try {
-            const response = await fetch('https://clipper.ai/api/chat', {
+            const response = await fetch('http://clipper.ai/api/chat', {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json'
@@ -120,7 +120,7 @@
     // Function to fetch initial data
     async function fetchData() {
         try {
-            const response = await fetch('/api/data');
+            const response = await fetch('http://clipper.ai/api/data');
             if (response.ok) {
                 const data = await response.json();
                 document.getElementById('output').innerText = data.message;
