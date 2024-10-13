@@ -9,7 +9,7 @@ app = Flask(__name__)
 CORS(app, resources={r"/api/*": {"origins": "*"}})
 
 # Set up Hugging Face API key and model
-API_KEY = os.getenv('HUGGINGFACE_API_KEY', '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')
+API_KEY = os.getenv('HUGGINGFACE_API_KEY', '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')
 gpt2_model_name = 'gpt2'  # Model for text generation
 inference = InferenceClient(model=gpt2_model_name, token=API_KEY)
 
