@@ -33,11 +33,12 @@ def chat():
         return jsonify({'error': 'No input message provided.'}), 400
 
     try:
-        response = inference.predict(user_message)
-        response_text = response.get('generated_text', 'Error: No response from model')
+        # Call the model using the correct method
+        response = inference(user_message)  # Use __call__ method implicitly
+        response_text = response['generated_text'] if 'generated_text' in response else 'Error: No response from model'
         return jsonify({'response': response_text})
     except Exception as e:
         return jsonify({'error': str(e)}), 500
-
+        
 if __name__ == '__main__':
     app.run(debug=True, host='0.0.0.0', port=8000)
