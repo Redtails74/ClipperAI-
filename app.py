@@ -7,10 +7,9 @@ import requests
 app = Flask(__name__)
 CORS(app, resources={r"/api/*": {"origins": "*"}})
 
-# Set up Hugging Face API key and model
 API_KEY = os.getenv('HUGGINGFACE_API_KEY', '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')
-gpt2_model_name = 'gpt2'  # Model for text generation
-inference = InferenceClient(model=gpt2_model_name, token=API_KEY)
+model_name = 'gpt2'  # or whatever model you want to use
+inference = InferenceClient(model_name, token=API_KEY)
 
 # Base URL for Hugging Face API
 BASE_URL = "https://api-inference.huggingface.co/models/"
@@ -25,7 +24,7 @@ def query_huggingface_api(model, payload):
 @app.route('/')
 def home():
     return send_from_directory('.', 'index.html')  # Serve index.html from the main directory
-    
+
 @app.route('/api/chat', methods=['POST'])
 def chat():
     user_message = request.json.get('message', '')
@@ -33,8 +32,8 @@ def chat():
         return jsonify({'error': 'No input message provided.'}), 400
 
     try:
-        # Use the correct method to get a response
-        response = inference.predict(user_message)
+        # Use the __call__ method to get a response
+        response = inference(user_message)
         response_text = response.get('generated_text', 'Error: No response from model')
         return jsonify({'response': response_text})
     except Exception as e:
