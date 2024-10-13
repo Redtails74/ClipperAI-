@@ -1,4 +1,4 @@
-from flask import Flask, render_template, request, jsonify
+from flask import Flask, request, jsonify, send_from_directory
 from flask_cors import CORS
 from huggingface_hub import InferenceClient
 import os
@@ -24,7 +24,7 @@ def query_huggingface_api(model, payload):
 
 @app.route('/')
 def home():
-    return render_template('index.html')  # Serves the HTML file
+    return send_from_directory('.', 'index.html')  # Serve index.html from the main directory
 
 @app.route('/api/chat', methods=['POST'])
 def chat():
