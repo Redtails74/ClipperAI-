@@ -1,4 +1,4 @@
-from flask import Flask, request, jsonify, redirect
+from flask import Flask, request, jsonify
 from flask_cors import CORS
 from huggingface_hub import InferenceClient
 import os
@@ -37,11 +37,6 @@ def answer_question():
     context = request.json.get('context', '')
     result = query_huggingface_api("deepset/roberta-base-squad2", {"inputs": {"question": question, "context": context}})
     return jsonify(result)
-
-# Redirect to GitHub Pages
-@app.route('/')
-def index():
-    return redirect('https://redtails74.github.io/ClipperAI-/index.html')
 
 @app.route('/api/data', methods=['GET'])
 def get_data():
