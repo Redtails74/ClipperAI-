@@ -1,14 +1,14 @@
 from flask import Flask, request, jsonify, send_from_directory
 from flask_cors import CORS
 import os
-import requests
+from transformers import pipeline
 
 app = Flask(__name__)
 CORS(app, resources={r"/api/*": {"origins": "*"}})
 
 API_KEY = os.getenv('HUGGINGFACE_API_KEY', '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')
 model_name = 'gpt2'  # Specify the model you want to use
-inference = InferenceClient(model_name, token=API_KEY)
+generator = pipeline('text-generation', model=model_name, tokenizer=model_name, device=0, top_k=50, top_p=0.95, num_return_sequences=1)
 
 @app.route('/')
 def home():
@@ -20,30 +20,14 @@ def chat():
     if not user_message:
         return jsonify({'error': 'No input message provided.'}), 400
 
-    @app.route('/api/chat', methods=['POST'])
-def chat():
-    user_message = request.json.get('message', '')
-    if not user_message:
-        return jsonify({'error': 'No input message provided.'}), 400
-
-    @app.route('/api/chat', methods=['POST'])
-def chat():
-    user_message = request.json.get('message', '')
-    if not user_message:
-        return jsonify({'error': 'No input message provided.'}), 400
-
     try:
-        # Using the inference client correctly
-        response = inference.generate({"input_text": user_message})  # Use the correct method and input format
-        
-        # Print the response for debugging
-        print(response)  # Log the response for troubleshooting
-
-        # Adjust based on the actual response structure
+        # Using the generator correctly
+        response = generator(user_message, max_length=100, do_sample=True, num_return_sequences=1)
         response_text = response[0]['generated_text']  # Access the generated text
         return jsonify({'response': response_text})
     except Exception as e:
         return jsonify({'error': str(e)}), 500
-       
+
 if __name__ == '__main__':
     app.run(debug=True, host='0.0.0.0', port=8000)
+
