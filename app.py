@@ -21,9 +21,9 @@ def chat():
         return jsonify({'error': 'No input message provided.'}), 400
 
     try:
-        # Use the inference client to generate a response
-        response = inference({"input_text": user_message})  # Use a dictionary with the correct key
-
+        # Call the inference client correctly
+        response = inference([user_message])  # Pass as a list
+        
         # Print the response for debugging
         print(response)  # Log the response for troubleshooting
         
