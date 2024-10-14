@@ -20,17 +20,24 @@ def chat():
     if not user_message:
         return jsonify({'error': 'No input message provided.'}), 400
 
+    @app.route('/api/chat', methods=['POST'])
+def chat():
+    user_message = request.json.get('message', '')
+    if not user_message:
+        return jsonify({'error': 'No input message provided.'}), 400
+
     try:
-        # Call the inference client correctly
-        response = inference([user_message])  # Pass as a list
+        # Using the inference client correctly
+        response = inference.generate({"input_text": user_message})  # Use the correct method and input format
         
         # Print the response for debugging
         print(response)  # Log the response for troubleshooting
-        
-        response_text = response[0]['generated_text']  # Adjust based on the actual response structure
+
+        # Adjust based on the actual response structure
+        response_text = response[0]['generated_text']  # Access the generated text
         return jsonify({'response': response_text})
     except Exception as e:
         return jsonify({'error': str(e)}), 500
-
+       
 if __name__ == '__main__':
     app.run(debug=True, host='0.0.0.0', port=8000)
