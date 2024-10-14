@@ -8,7 +8,18 @@ CORS(app, resources={r"/api/*": {"origins": "*"}})
 
 API_KEY = os.getenv('HUGGINGFACE_API_KEY', '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')
 model_name = 'gpt2'  # Specify the model you want to use
-generator = pipeline('text-generation', model=model_name, tokenizer=model_name, device=0, top_k=50, top_p=0.95, num_return_sequences=1)
+
+# Check available devices
+devices = pipeline('text-generation').device
+print(f"Available devices: {devices}")
+
+# Use the first available device
+if 0 in devices:
+    device = 0
+else:
+    device = devices[0]
+
+generator = pipeline('text-generation', model=model_name, tokenizer=model_name, device=device, top_k=50, top_p=0.95, num_return_sequences=1)
 
 @app.route('/')
 def home():
@@ -30,4 +41,3 @@ def chat():
 
 if __name__ == '__main__':
     app.run(debug=True, host='0.0.0.0', port=8000)
-
