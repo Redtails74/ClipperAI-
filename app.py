@@ -10,14 +10,14 @@ API_KEY = os.getenv('HUGGINGFACE_API_KEY', 'hf_eNsVjTukrZTCpzLYQZaczqATkjJfcILvO
 model_name = 'gpt2'  # Specify the model you want to use
 
 # Check available devices
-devices = pipeline('text-generation').device
-print(f"Available devices: {devices}")
+pipeline_device = pipeline('text-generation').device
+print(f"Available device: {pipeline_device}")
 
-# Use the first available device
-if 0 in devices:
+# Use the available device
+if pipeline_device.type == 'cuda':
     device = 0
 else:
-    device = devices[0]
+    device = -1
 
 generator = pipeline('text-generation', model=model_name, tokenizer=model_name, device=device, top_k=50, top_p=0.95, num_return_sequences=1)
 
