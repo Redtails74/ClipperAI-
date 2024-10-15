@@ -2,13 +2,11 @@ from flask import Flask, request, jsonify, redirect
 from flask_cors import CORS
 import os
 from transformers import pipeline
-from werkzeug.middleware.proxy_fix import ProxyFix  # Add this line
 
 app = Flask(__name__)
 CORS(app, resources={r"/api/*": {"origins": "*"}})
 
 app.config['PREFERRED_URL_SCHEME'] = 'https'
-app.wsgi_app = ProxyFix(app.wsgi_app, x_for=1, x_proto=1)
 
 API_KEY = os.getenv('HUGGINGFACE_API_KEY', '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')
 model_name = 'gpt2'
