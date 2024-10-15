@@ -75,15 +75,14 @@
         <div id="chat"></div>
         <p id="output">Loading...</p>
     </div>
-    
-    <script>
+  <script>
     const input = document.getElementById('input');
     const sendButton = document.getElementById('send');
     const chatDiv = document.getElementById('chat');
     const output = document.getElementById('output');
 
-   // Function to send user input and receive a response
-    sendButton.addEventListener('click', async () => {
+    // Function to send user input and receive a response
+    async function sendMessage() {
         const message = input.value.trim();
         if (!message) return; // Prevent empty input
 
@@ -99,30 +98,18 @@
                 body: JSON.stringify({ message })
             });
 
-            console.log('Response:', response); // Log the response object
-
             if (response.ok) {
                 const data = await response.json();
-                console.log('Data:', data); // Log the parsed JSON data
                 updateChat('ChatGPT', data.response);
             } else {
                 updateChat('Error', response.statusText);
             }
-
-            console.log('Response processed'); // Log that the response has been processed
-
         } catch (error) {
             updateChat('Error', error.message);
         }
 
         input.value = '';
         output.textContent = "";
-    });
-
-    // Update chat function
-    function updateChat(speaker, message) {
-        chatDiv.innerHTML += `<div><strong>${speaker}:</strong> ${message}</div>`;
-        chatDiv.scrollTop = chatDiv.scrollHeight; // Scroll to the bottom
     }
 
     // Function to fetch initial data
@@ -140,8 +127,11 @@
         }
     }
 
+    // Event listener for the "Send" button
+    sendButton.addEventListener('click', sendMessage);
+
     // Fetch initial data when the document is loaded
     document.addEventListener('DOMContentLoaded', fetchData);
-    </script>
+</script>
 </body>
 </html>
