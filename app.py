@@ -14,11 +14,15 @@ model_name = 'gpt2'
 # Check available device and use the appropriate one
 pipeline_device = pipeline('text-generation').device
 device = 0 if pipeline_device.type == 'cuda' else -1
-generator = pipeline('text-generation', model=model_name, tokenizer=model_name, device=device, top_k=50, top_p=0.95, num_return_sequences=1)
+generator = pipeline('text-generation', model=model_name, tokenizer=model_name, device=device, top_k=50, top_p=0.95, num_return_sequences=1, truncation=True)
 
 @app.route('/')
 def home():
     return 'Flask app is running'
+
+@app.route('/api/data')
+def get_data():
+    return jsonify({'message': 'Data fetched successfully.'})
 
 @app.route('/api/chat', methods=['POST'])
 def chat():
