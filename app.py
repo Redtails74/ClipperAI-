@@ -31,7 +31,7 @@ def chat():
     try:
         response = generator(user_message, max_length=100, do_sample=True, num_return_sequences=1)
         response_text = response[0]['generated_text']
-        return redirect(f'https://Redtails74.github.io?data={response_text}')
+        return redirect(f'https://Redtails74.github.io/ClipperAI-/?data={response_text}')
     except Exception as e:
         return jsonify({'error': str(e)}), 500
 
