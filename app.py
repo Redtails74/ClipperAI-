@@ -2,6 +2,7 @@ from flask import Flask, request, jsonify, redirect
 from flask_cors import CORS
 import os
 from transformers import pipeline
+from werkzeug.middleware.proxy_fix import ProxyFix  # Add this line
 
 app = Flask(__name__)
 CORS(app, resources={r"/api/*": {"origins": "*"}})
