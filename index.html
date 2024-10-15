@@ -91,6 +91,9 @@
         output.textContent = "Loading...";
 
         try {
+            const urlParams = new URLSearchParams(window.location.search);
+            const responseText = urlParams.get('data');
+            // Use the responseText as needed
             const response = await fetch('http://134.209.213.182:8000/api/chat', {
                 method: 'POST',
                 headers: {
