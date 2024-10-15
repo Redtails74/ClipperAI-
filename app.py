@@ -2,9 +2,6 @@ from flask import Flask, request, jsonify, redirect
 from flask_cors import CORS
 import os
 
-if os.getenv('WERKZEUG_RUN_MAIN') == 'true':
-    os.environ['WERKZEUG_SERVER_FD'] = str(3)
-
 from transformers import pipeline
 
 app = Flask(__name__)
