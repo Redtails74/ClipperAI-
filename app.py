@@ -31,10 +31,10 @@ generator = pipeline('text-generation', model=model_name, tokenizer=model_name, 
 
 @app.route('/')
 def home():
-    return send_from_directory('.', 'index.html')  # Serve index.html from the main directory
+    return 'Flask app is running'
 
-@app.route('/query', methods=['POST'])
-def handle_query():
+@app.route('/api/chat', methods=['POST'])
+def handle_chat():
     # Retrieve the query data from the request
     query_data = request.form['query']
 
