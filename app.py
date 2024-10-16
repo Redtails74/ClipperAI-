@@ -33,10 +33,28 @@ def chat():
     try:
         response = generator(user_message, max_length=100, do_sample=True, num_return_sequences=1)
         response_text = response[0]['generated_text']
-        return redirect(f'https://Redtails74.github.io/ClipperAI-?data={response_text}')
+        return redirect(f'https://Redtails74.github.io/ClipperAI-/?data={response_text}')
     except Exception as e:
         return jsonify({'error': str(e)}), 500
 
+# DNS query handler
+@app.route('/dns-query', methods=['GET', 'POST'])
+def dns_query():
+    if request.method == 'GET':
+        name = request.args.get('name')
+        query_type = request.args.get('type', 'A')  # Default to A record
+        if name:
+            # Example response
+            return jsonify({
+                'name': name,
+                'type': query_type,
+                'address': '1.2.3.4'  # Mock IP address
+            })
+        else:
+            return jsonify({'error': 'Name parameter is required'}), 400
+    elif request.method == 'POST':
+        # Handle POST requests if needed (usually DNS queries are GET)
+        return jsonify({'error': 'POST method not supported for DNS queries'}), 405
+
 if __name__ == '__main__':
     app.run(debug=True, host='0.0.0.0', port=8000)
-
