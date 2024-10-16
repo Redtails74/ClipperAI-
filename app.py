@@ -64,17 +64,6 @@ def dns_query():
     elif request.method == 'POST':
         # Handle POST requests if needed (usually DNS queries are GET)
         return jsonify({'error': 'POST method not supported for DNS queries'}), 405
-import logging
-
-logging.basicConfig(level=logging.INFO)
-logger = logging.getLogger(__name__)
-
-# In your functions where errors might occur:
-try:
-    # ...
-except Exception as e:
-    logger.error(f"An error occurred: {e}")
-    return jsonify({'error': 'An internal server error occurred'}), 500
 
 if __name__ == '__main__':
     app.run(debug=True, host='0.0.0.0', port=8000)
