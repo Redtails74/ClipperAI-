@@ -75,63 +75,63 @@
         <div id="chat"></div>
         <p id="output">Loading...</p>
     </div>
-  <script>
-    const input = document.getElementById('input');
-    const sendButton = document.getElementById('send');
-    const chatDiv = document.getElementById('chat');
-    const output = document.getElementById('output');
+     <script>
+        const input = document.getElementById('input');
+        const sendButton = document.getElementById('send');
+        const chatDiv = document.getElementById('chat');
+        const output = document.getElementById('output');
 
-    // Function to send user input and receive a response
-    async function sendMessage() {
-        const message = input.value.trim();
-        if (!message) return; // Prevent empty input
+        // Function to send user input and receive a response
+        async function sendMessage() {
+            const message = input.value.trim();
+            if (!message) return; // Prevent empty input
 
-        updateChat('User', message);
-        output.textContent = "Loading...";
+            updateChat('User', message);
+            output.textContent = "Loading...";
 
-        try {
-            const response = await fetch('https://clipper.ai/api/chat', {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json'
-                },
-                body: JSON.stringify({ message })
-            });
+            try {
+                const response = await fetch('https://clipper.ai/api/chat', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({ message })
+                });
 
-            if (response.ok) {
-                const data = await response.json();
-                updateChat('ChatGPT', data.response);
-            } else {
-                updateChat('Error', response.statusText);
+                if (response.ok) {
+                    const data = await response.json();
+                    updateChat('ChatGPT', data.response);
+                } else {
+                    updateChat('Error', response.statusText);
+                }
+            } catch (error) {
+                updateChat('Error', error.message);
             }
-        } catch (error) {
-            updateChat('Error', error.message);
+
+            input.value = '';
+            output.textContent = "";
         }
 
-        input.value = '';
-        output.textContent = "";
-    }
-
-    // Function to fetch initial data
-    async function fetchData() {
-        try {
-            const response = await fetch('https://clipper.ai/api/data');
-            if (response.ok) {
-                const data = await response.json();
-                output.textContent = data.message;
-            } else {
+        // Function to fetch initial data
+        async function fetchData() {
+            try {
+                const response = await fetch('https://clipper.ai/api/data');
+                if (response.ok) {
+                    const data = await response.json();
+                    output.textContent = data.message;
+                } else {
+                    output.textContent = "Error fetching data.";
+                }
+            } catch (error) {
                 output.textContent = "Error fetching data.";
             }
-        } catch (error) {
-            output.textContent = "Error fetching data.";
         }
-    }
 
-    // Event listener for the "Send" button
-    sendButton.addEventListener('click', sendMessage);
+        // Event listener for the "Send" button
+        sendButton.addEventListener('click', sendMessage);
 
-    // Fetch initial data when the document is loaded
-    document.addEventListener('DOMContentLoaded', fetchData);
-</script>
+        // Fetch initial data when the document is loaded
+        document.addEventListener('DOMContentLoaded', fetchData);
+    </script>
 </body>
 </html>
