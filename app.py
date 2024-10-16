@@ -3,8 +3,8 @@ from flask_cors import CORS
 import os
 from transformers import pipeline
 
-app = Flask(__name__)
-CORS(app, resources={r"/api/*": {"origins": ["https://Redtails74.github.io"]}})
+aapp = Flask(__name__)
+CORS(app, resources={r"/api/*": {"origins": ["https://clipper.ai"]}})
 
 app.config['PREFERRED_URL_SCHEME'] = 'https'
 
