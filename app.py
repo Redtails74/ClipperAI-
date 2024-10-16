@@ -5,7 +5,7 @@ from transformers import pipeline
 
 app = Flask(__name__)
 
-CORS(app, resources={r"/api/*": {"origins": ["https://clipper.ai"]}})
+CORS(app, resources={r"/*": {"origins": "*"}})
 
 app.config['PREFERRED_URL_SCHEME'] = 'https'
 
