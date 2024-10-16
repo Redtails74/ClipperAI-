@@ -1,10 +1,16 @@
-from flask import Flask, request, jsonify, redirect
+from flask import Flask, request, jsonify
 from flask_cors import CORS
 import os
 from transformers import pipeline
+from urllib.parse import quote
+import logging
+
+# Setting up logger
+logging.basicConfig(level=logging.INFO)
+logger = logging.getLogger(__name__)
 
 app = Flask(__name__)
-CORS(app, resources={r"/*": {"origins": "*"}})
+CORS(app, resources={r"/api/*": {"origins": "*"}})  # More specific CORS if possible
 
 app.config['PREFERRED_URL_SCHEME'] = 'https'
 
@@ -31,11 +37,14 @@ def chat():
         return jsonify({'error': 'No input message provided.'}), 400
 
     try:
+        # Your existing logic for text generation
         response = generator(user_message, max_length=100, do_sample=True, num_return_sequences=1)
         response_text = response[0]['generated_text']
-        return redirect(f'https://Redtails74.github.io/ClipperAI-/?data={response_text}')
+        encoded_response = quote(response_text)
+        return jsonify({'url': f'https://Redtails74.github.io/ClipperAI-/?data={encoded_response}'})
     except Exception as e:
-        return jsonify({'error': str(e)}), 500
+        logger.error(f"Error in chat route: {e}")
+        return jsonify({'error': 'An internal server error occurred'}), 500
 
 # DNS query handler
 @app.route('/dns-query', methods=['GET', 'POST'])
@@ -55,6 +64,17 @@ def dns_query():
     elif request.method == 'POST':
         # Handle POST requests if needed (usually DNS queries are GET)
         return jsonify({'error': 'POST method not supported for DNS queries'}), 405
+import logging
+
+logging.basicConfig(level=logging.INFO)
+logger = logging.getLogger(__name__)
+
+# In your functions where errors might occur:
+try:
+    # ...
+except Exception as e:
+    logger.error(f"An error occurred: {e}")
+    return jsonify({'error': 'An internal server error occurred'}), 500
 
 if __name__ == '__main__':
     app.run(debug=True, host='0.0.0.0', port=8000)
