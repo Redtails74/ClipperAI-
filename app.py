@@ -47,23 +47,23 @@ def chat():
         return jsonify({'error': 'An internal server error occurred'}), 500
 
 # DNS query handler
-@app.route('/dns-query', methods=['GET', 'POST'])
+@app.route('/dns-query', methods=['GET'])
 def dns_query():
-    if request.method == 'GET':
-        name = request.args.get('name')
-        query_type = request.args.get('type', 'A')  # Default to A record
-        if name:
-            # Example response
-            return jsonify({
-                'name': name,
-                'type': query_type,
-                'address': '1.2.3.4'  # Mock IP address
-            })
-        else:
-            return jsonify({'error': 'Name parameter is required'}), 400
-    elif request.method == 'POST':
-        # Handle POST requests if needed (usually DNS queries are GET)
-        return jsonify({'error': 'POST method not supported for DNS queries'}), 405
+    name = request.args.get('name')
+    query_type = request.args.get('type', 'A')  # Default to A record
+    if name:
+        # Example response
+        return jsonify({
+            'name': name,
+            'type': query_type,
+            'address': '1.2.3.4'  # Mock IP address
+        })
+    else:
+        return jsonify({'error': 'Name parameter is required'}), 400
 
 if __name__ == '__main__':
-    app.run(debug=True, host='0.0.0.0', port=8000)
+    # Read host and port from environment variables or use defaults
+    host = os.getenv('FLASK_RUN_HOST', '0.0.0.0')
+    port = int(os.getenv('FLASK_RUN_PORT', 5000))  # Default to 5000 if not set
+    
+    app.run(debug=False, host=host, port=port)  # Debug mode disabled for production
