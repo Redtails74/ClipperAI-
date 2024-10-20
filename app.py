@@ -1,3 +1,4 @@
+
 from flask import Flask, request, jsonify
 from flask_cors import CORS
 import os
@@ -15,12 +16,27 @@ CORS(app, resources={r"/api/*": {"origins": "*"}})  # More specific CORS if poss
 app.config['PREFERRED_URL_SCHEME'] = 'https'
 
 API_KEY = os.getenv('HUGGINGFACE_API_KEY', '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')
-model_name = 'gpt2'
+if API_KEY.startswith('hf_'):
+    from transformers import AutoTokenizer, AutoModelForSeq2SeqLM
+    try:
+        tokenizer = AutoTokenizer.from_pretrained(API_KEY.replace('hf_', ''))
+        model = AutoModelForSeq2SeqLM.from_pretrained(API_KEY.replace('hf_', ''))
+        burta_generator = pipeline('text-generation', model=model, tokenizer=tokenizer, device=-1, top_k=50, top_p=0.95, num_return_sequences=1, truncation=True)
+    except Exception as e:
+        logger.error(f"Error initializing model: {e}")
+        burta_generator = None
 
-# Check available device and use the appropriate one
-pipeline_device = pipeline('text-generation').device
-device = 0 if pipeline_device.type == 'cuda' else -1
-generator = pipeline('text-generation', model=model_name, tokenizer=model_name, device=device, top_k=50, top_p=0.95, num_return_sequences=1, truncation=True)
+    try:
+        tokenizer = AutoTokenizer.from_pretrained('Burta')
+        model = AutoModelForSeq2SeqLM.from_pretrained('Burta')
+        gpt2_generator = pipeline('text-generation', model=model, tokenizer=tokenizer, device=-1, top_k=50, top_p=0.95, num_return_sequences=1, truncation=True)
+    except Exception as e:
+        logger.error(f"Error initializing model: {e}")
+        gpt2_generator = None
+else:
+    logger.error("Invalid API key format")
+    burta_generator = None
+    gpt2_generator = None
 
 @app.route('/')
 def home():
@@ -36,34 +52,28 @@ def chat():
     if not user_message:
         return jsonify({'error': 'No input message provided.'}), 400
 
-    try:
-        # Your existing logic for text generation
-        response = generator(user_message, max_length=100, do_sample=True, num_return_sequences=1)
-        response_text = response[0]['generated_text']
-        encoded_response = quote(response_text)
-        return jsonify({'url': f'https://Redtails74.github.io/ClipperAI-/?data={encoded_response}'})
-    except Exception as e:
-        logger.error(f"Error in chat route: {e}")
-        return jsonify({'error': 'An internal server error occurred'}), 500
-
-# DNS query handler
-@app.route('/dns-query', methods=['GET'])
-def dns_query():
-    name = request.args.get('name')
-    query_type = request.args.get('type', 'A')  # Default to A record
-    if name:
-        # Example response
-        return jsonify({
-            'name': name,
-            'type': query_type,
-            'address': '1.2.3.4'  # Mock IP address
-        })
-    else:
-        return jsonify({'error': 'Name parameter is required'}), 400
-
-if __name__ == '__main__':
-    # Read host and port from environment variables or use defaults
-    host = os.getenv('FLASK_RUN_HOST', '0.0.0.0')
-    port = int(os.getenv('FLASK_RUN_PORT', 5000))  # Default to 5000 if not set
-    
-    app.run(debug=False, host=host, port=port)  # Debug mode disabled for production
+    model = request.json.get('model', 'burta')
+    if model == 'burta':
+        if burta_generator:
+            try:
+                # Your existing logic for text generation
+                response = burta_generator(user_message, max_length=100, do_sample=True, num_return_sequences=1)
+                response_text = response[0]['generated_text']
+                return jsonify({'text': response_text})
+            except Exception as e:
+                logger.error(f"Error in chat route: {e}")
+                return jsonify({'error': 'An internal server error occurred'}), 500
+        else:
+            return jsonify({'error': 'Invalid API key'}), 400
+    elif model == 'gpt2':
+        if gpt2_generator:
+            try:
+                # Your existing logic for text generation
+                response = gpt2_generator(user_message, max_length=100, do_sample=True, num_return_sequences=1)
+                response_text = response[0]['generated_text']
+                return jsonify({'text': response_text})
+            except Exception as e:
+                logger.error(f"Error in chat route: {e}")
+                return jsonify({'error': 'An internal server error occurred'}), 500
+        else:
+            return jsonify({'error': 'Invalid API key'}), 
