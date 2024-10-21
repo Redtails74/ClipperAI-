@@ -49,15 +49,21 @@ else:
 
 def generate_response(model, user_message):
     if model == 'burta':
+        if burta_generator is None:
+            raise ValueError("Burta generator is not initialized.")
         response = burta_generator(user_message, max_length=100, do_sample=True, num_return_sequences=1)
     elif model == 'gpt2':
+        if gpt2_generator is None:
+            raise ValueError("GPT-2 generator is not initialized.")
         response = gpt2_generator(user_message, max_length=100, do_sample=True, num_return_sequences=1)
     elif model == 'roberta':
+        if roberta_classifier is None:
+            raise ValueError("RoBERTa classifier is not initialized.")
         response = roberta_classifier(user_message)
         return response  # Return classification results directly
     else:
         raise ValueError(f"Invalid model: {model}")
-    
+
     response_text = response[0]['generated_text'] if 'generated_text' in response[0] else response[0]
     return response_text
 
