@@ -5,8 +5,7 @@ import string
 from flask import Flask, request, jsonify, render_template
 from flask_cors import CORS
 import logging
-from transformers import pipeline, AutoTokenizer, AutoModelForSequenceClassification
-from urllib.parse import quote
+from transformers import pipeline, AutoTokenizer, AutoModelForSequenceClassification, AutoModelForSeq2SeqLM
 
 # Setting up logger
 logging.basicConfig(level=logging.INFO)
@@ -64,7 +63,8 @@ def generate_response(model, user_message):
 
 @app.route('/')
 def home():
-    with open(os.path.join(app.static_folder, 'index.html')) as f:
+    # Serve the index.html file directly from the root directory
+    with open('index.html') as f:
         return f.read()
         
 @app.route('/api/data')
