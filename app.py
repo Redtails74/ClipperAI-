@@ -39,5 +39,9 @@ def chat():
     except Exception as e:
         return jsonify({'error': str(e)}), 500
 
+@app.route('/Code-Clipper-Logo-01.jpg')
+def serve_logo():
+    return send_from_directory(os.path.dirname(os.path.abspath(__file__)), 'Code Clipper Logo-01.jpg')
+
 if __name__ == '__main__':
     app.run(debug=True, host='0.0.0.0', port=5000)
