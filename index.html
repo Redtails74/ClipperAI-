@@ -69,7 +69,7 @@
 </head>
 <body>
     <div id="app">
-        <img src="https://clipper.ai/Code%20Clipper%20Logo-01.jpg" alt="Logo" />
+        <img src="{{ url_for('static', filename='Code Clipper Logo-01.jpg') }}" alt="Logo" />
         <textarea id="input" placeholder="Type your message..."></textarea>
         <button id="send">Send</button>
         <div id="chat"></div>
@@ -100,7 +100,7 @@
 
                 if (response.ok) {
                     const data = await response.json();
-                    updateChat('ChatGPT', data.text); // Changed this line
+                    updateChat('AI', data.text);
                 } else {
                     updateChat('Error', response.statusText);
                 }
@@ -123,8 +123,8 @@
         sendButton.addEventListener('click', sendMessage);
 
         // Allow sending message with Enter key
-        input.addEventListener('keypress', function (e) {
-            if (e.key === 'Enter') {
+        input.addEventListener('keypress', function(e) {
+            if (e.key === 'Enter' && !e.shiftKey) {
                 sendMessage();
                 e.preventDefault(); // Prevent newline in textarea
             }
