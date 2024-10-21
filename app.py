@@ -1,7 +1,12 @@
+import os
+import logging
 from flask import Flask, request, jsonify, send_from_directory
 from flask_cors import CORS
-import os
 from transformers import pipeline
+
+# Setting up logger
+logging.basicConfig(level=logging.INFO)
+logger = logging.getLogger(__name__)
 
 app = Flask(__name__)
 CORS(app, resources={r"/api/*": {"origins": "*"}})
@@ -14,11 +19,9 @@ pipeline_device = pipeline('text-generation').device
 print(f"Available device: {pipeline_device}")
 
 # Use the available device
-if pipeline_device.type == 'cuda':
-    device = 0
-else:
-    device = -1
+device = 0 if pipeline_device.type == 'cuda' else -1
 
+# Initialize the text generation pipeline
 generator = pipeline('text-generation', model=model_name, tokenizer=model_name, device=device, top_k=50, top_p=0.95, num_return_sequences=1)
 
 @app.route('/')
@@ -37,11 +40,9 @@ def chat():
         response_text = response[0]['generated_text']  # Access the generated text
         return jsonify({'response': response_text})
     except Exception as e:
-        return jsonify({'error': str(e)}), 500
-
-@app.route('/Code-Clipper-Logo-01.jpg')
-def serve_logo():
-    return send_from_directory(os.path.dirname(os.path.abspath(__file__)), 'Code Clipper Logo-01.jpg')
+        logger.error(f"Error in chat route: {e}")
+        return jsonify({'error': 'An internal server error occurred.'}), 500
 
 if __name__ == '__main__':
     app.run(debug=True, host='0.0.0.0', port=5000)
+
