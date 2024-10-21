@@ -1,57 +1,29 @@
-from flask import Flask, render_template
+from flask import Flask, request, jsonify, send_from_directory
 from flask_cors import CORS
-from huggingface_hub import InferenceClient
 import os
-import requests
+from transformers import pipeline
 
-app = Flask(__name__)
-CORS(app)
-
-@app.route('/')
-def home():
-    return render_template('index.html')  # Serves the HTML file
-
-@app.route('/api/data', methods=['GET'])
-def get_data():
-    return jsonify({'message': 'Hello, World!'})
-
-# Initialize Flask app
 app = Flask(__name__)
 CORS(app, resources={r"/api/*": {"origins": "*"}})
 
-# Set up Hugging Face API key and model
 API_KEY = os.getenv('HUGGINGFACE_API_KEY', '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')
-gpt2_model_name = 'gpt2'  # Model for text generation
-inference = InferenceClient(model=gpt2_model_name, token=API_KEY)
+model_name = 'gpt2'  # Specify the model you want to use
 
-# Base URL for Hugging Face API
-BASE_URL = "https://api-inference.huggingface.co/models/"
+# Check available devices
+pipeline_device = pipeline('text-generation').device
+print(f"Available device: {pipeline_device}")
 
-# Function to query Hugging Face Inference API
-def query_huggingface_api(model, payload):
-    url = f"{BASE_URL}{model}"
-    response = requests.post(url, headers={"Authorization": f"Bearer {API_KEY}"}, json=payload)
-    response.raise_for_status()  # Raise an error for bad responses
-    return response.json()
+# Use the available device
+if pipeline_device.type == 'cuda':
+    device = 0
+else:
+    device = -1
 
-# Route for generating text with GPT-2 (via Hugging Face API)
-@app.route('/generate-text', methods=['POST'])
-def generate_text():
-    input_text = request.json.get('text', '')
-    generated = query_huggingface_api(gpt2_model_name, {"inputs": input_text})
-    return jsonify(generated)
+generator = pipeline('text-generation', model=model_name, tokenizer=model_name, device=device, top_k=50, top_p=0.95, num_return_sequences=1)
 
-# Route for question answering with RoBERTa (via Hugging Face API)
-@app.route('/question-answer', methods=['POST'])
-def answer_question():
-    question = request.json.get('question', '')
-    context = request.json.get('context', '')
-    result = query_huggingface_api("deepset/roberta-base-squad2", {"inputs": {"question": question, "context": context}})
-    return jsonify(result)
-
-@app.route('/api/data', methods=['GET'])
-def get_data():
-    return jsonify({'message': 'Hello, World!'})
+@app.route('/')
+def home():
+    return send_from_directory('.', 'index.html')  # Serve index.html from the main directory
 
 @app.route('/api/chat', methods=['POST'])
 def chat():
@@ -60,11 +32,12 @@ def chat():
         return jsonify({'error': 'No input message provided.'}), 400
 
     try:
-        response = inference.predict(user_message)
-        response_text = response.get('generated_text', 'Error: No response from model')
+        # Using the generator correctly
+        response = generator(user_message, max_length=100, do_sample=True, num_return_sequences=1)
+        response_text = response[0]['generated_text']  # Access the generated text
         return jsonify({'response': response_text})
     except Exception as e:
         return jsonify({'error': str(e)}), 500
 
 if __name__ == '__main__':
-    app.run(debug=True)
+    app.run(debug=True, host='0.0.0.0', port=5000)
