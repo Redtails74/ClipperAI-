@@ -2,7 +2,7 @@ import os
 import json
 import random
 import string
-from flask import Flask, request, jsonify
+from flask import Flask, request, jsonify, render_template
 from flask_cors import CORS
 import logging
 from transformers import pipeline, AutoTokenizer, AutoModelForSequenceClassification
@@ -12,7 +12,7 @@ from urllib.parse import quote
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
-app = Flask(__name__)
+app = Flask(__name__, static_folder='static', template_folder='templates')
 CORS(app, resources={r"/api/*": {"origins": "*"}})
 
 app.config['PREFERRED_URL_SCHEME'] = 'https'
@@ -64,7 +64,7 @@ def generate_response(model, user_message):
 
 @app.route('/')
 def home():
-    return 'Flask app is running'
+    return render_template('index.html')  # Assuming you have an index.html in your templates folder
 
 @app.route('/api/data')
 def get_data():
