@@ -10,12 +10,17 @@ from transformers import pipeline, AutoTokenizer, AutoModelForSequenceClassifica
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
-app = Flask(__name__)  # Removed static and template folders
+app = Flask(__name__)  # No static or template folders
 CORS(app, resources={r"/api/*": {"origins": "*"}})
 
 app.config['PREFERRED_URL_SCHEME'] = 'https'
 
 API_KEY = os.getenv('HUGGINGFACE_API_KEY', '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')
+burta_generator = None
+gpt2_generator = None
+roberta_classifier = None
+
+# Initialize models
 if API_KEY.startswith('hf_'):
     try:
         tokenizer = AutoTokenizer.from_pretrained(API_KEY.replace('hf_', ''))
@@ -23,7 +28,6 @@ if API_KEY.startswith('hf_'):
         burta_generator = pipeline('text-generation', model=model, tokenizer=tokenizer, device=-1, top_k=50, top_p=0.95, num_return_sequences=1, truncation=True)
     except Exception as e:
         logger.error(f"Error initializing Burta model: {e}")
-        burta_generator = None
 
     try:
         tokenizer = AutoTokenizer.from_pretrained('gpt2')
@@ -31,37 +35,32 @@ if API_KEY.startswith('hf_'):
         gpt2_generator = pipeline('text-generation', model=model, tokenizer=tokenizer, device=-1, top_k=50, top_p=0.95, num_return_sequences=1, truncation=True)
     except Exception as e:
         logger.error(f"Error initializing GPT-2 model: {e}")
-        gpt2_generator = None
 
     try:
         tokenizer_roberta = AutoTokenizer.from_pretrained('roberta-base')
-        model_roberta = AutoModelForSequenceClassification.from_pretrained('roberta-base', num_labels=2)  # Adjust num_labels as needed
+        model_roberta = AutoModelForSequenceClassification.from_pretrained('roberta-base', num_labels=2)
         roberta_classifier = pipeline('text-classification', model=model_roberta, tokenizer=tokenizer_roberta, device=-1)
     except Exception as e:
         logger.error(f"Error initializing RoBERTa model: {e}")
-        roberta_classifier = None
 else:
     logger.error("Invalid API key format")
-    burta_generator = None
-    gpt2_generator = None
-    roberta_classifier = None
 
-def generate_response(model, user_message):
-    if model == 'burta':
+def generate_response(model_name, user_message):
+    if model_name == 'burta':
         if burta_generator is None:
             raise ValueError("Burta generator is not initialized.")
         response = burta_generator(user_message, max_length=100, do_sample=True, num_return_sequences=1)
-    elif model == 'gpt2':
+    elif model_name == 'gpt2':
         if gpt2_generator is None:
             raise ValueError("GPT-2 generator is not initialized.")
         response = gpt2_generator(user_message, max_length=100, do_sample=True, num_return_sequences=1)
-    elif model == 'roberta':
+    elif model_name == 'roberta':
         if roberta_classifier is None:
             raise ValueError("RoBERTa classifier is not initialized.")
         response = roberta_classifier(user_message)
         return response  # Return classification results directly
     else:
-        raise ValueError(f"Invalid model: {model}")
+        raise ValueError(f"Invalid model: {model_name}")
 
     response_text = response[0]['generated_text'] if 'generated_text' in response[0] else response[0]
     return response_text
@@ -76,7 +75,11 @@ def home():
 def get_data():
     data = {
         'models': ['burta', 'gpt2', 'roberta'],
-        'example_prompts': ['Write a short story about a dragon.', 'Translate this English text to French: Hello, how are you?', 'Classify the sentiment of this text: "I love this!"']
+        'example_prompts': [
+            'Write a short story about a dragon.',
+            'Translate this English text to French: Hello, how are you?',
+            'Classify the sentiment of this text: "I love this!"'
+        ]
     }
     return jsonify(data)
 
