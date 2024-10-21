@@ -16,13 +16,25 @@ model_name = 'gpt2'  # Specify the model you want to use
 
 # Check available devices
 pipeline_device = pipeline('text-generation').device
-print(f"Available device: {pipeline_device}")
+logger.info(f"Available device: {pipeline_device}")
 
 # Use the available device
-device = 0 if pipeline_device.type == 'cuda' else -1
+if pipeline_device.type == 'cuda':
+    device = 0
+else:
+    device = -1
 
 # Initialize the text generation pipeline
-generator = pipeline('text-generation', model=model_name, tokenizer=model_name, device=device, top_k=50, top_p=0.95, num_return_sequences=1)
+generator = pipeline(
+    'text-generation', 
+    model=model_name, 
+    tokenizer=model_name, 
+    device=device, 
+    top_k=50, 
+    top_p=0.95, 
+    num_return_sequences=1,
+    pad_token_id=50256  # Set the pad token id
+)
 
 @app.route('/')
 def home():
@@ -35,14 +47,17 @@ def chat():
         return jsonify({'error': 'No input message provided.'}), 400
 
     try:
-        # Using the generator correctly
-        response = generator(user_message, max_length=100, do_sample=True, num_return_sequences=1)
+        # Generate response using the model
+        response = generator(user_message, max_length=100, do_sample=True, num_return_sequences=1, truncation=True)
         response_text = response[0]['generated_text']  # Access the generated text
         return jsonify({'response': response_text})
     except Exception as e:
         logger.error(f"Error in chat route: {e}")
-        return jsonify({'error': 'An internal server error occurred.'}), 500
+        return jsonify({'error': str(e)}), 500
+
+@app.route('/Code-Clipper-Logo-01.jpg')
+def serve_logo():
+    return send_from_directory(os.path.dirname(os.path.abspath(__file__)), 'Code Clipper Logo-01.jpg')
 
 if __name__ == '__main__':
     app.run(debug=True, host='0.0.0.0', port=5000)
-
