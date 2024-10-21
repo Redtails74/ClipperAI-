@@ -1,10 +1,12 @@
-
+import os
+import json
+import random
+import string
 from flask import Flask, request, jsonify
 from flask_cors import CORS
-import os
-from transformers import pipeline
-from urllib.parse import quote
 import logging
+from transformers import pipeline, AutoTokenizer, AutoModelForSeq2SeqLM
+from urllib.parse import quote
 
 # Setting up logger
 logging.basicConfig(level=logging.INFO)
@@ -17,7 +19,6 @@ app.config['PREFERRED_URL_SCHEME'] = 'https'
 
 API_KEY = os.getenv('HUGGINGFACE_API_KEY', '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')
 if API_KEY.startswith('hf_'):
-    from transformers import AutoTokenizer, AutoModelForSeq2SeqLM
     try:
         tokenizer = AutoTokenizer.from_pretrained(API_KEY.replace('hf_', ''))
         model = AutoModelForSeq2SeqLM.from_pretrained(API_KEY.replace('hf_', ''))
@@ -38,42 +39,44 @@ else:
     burta_generator = None
     gpt2_generator = None
 
+def generate_response(model, user_message):
+    if model == 'burta':
+        response = burta_generator(user_message, max_length=100, do_sample=True, num_return_sequences=1)
+    elif model == 'gpt2':
+        response = gpt2_generator(user_message, max_length=100, do_sample=True, num_return_sequences=1)
+    else:
+        raise ValueError(f"Invalid model: {model}")
+    response_text = response[0]['generated_text']
+    return response_text
+
 @app.route('/')
 def home():
     return 'Flask app is running'
 
 @app.route('/api/data')
 def get_data():
-    return jsonify({'message': 'Data fetched successfully.'})
+    data = {
+        'models': ['burta', 'gpt2'],
+        'example_prompts': ['Write a short story about a dragon.', 'Translate this English text to French: Hello, how are you?']
+    }
+    return jsonify(data)
 
 @app.route('/api/chat', methods=['POST'])
 def chat():
     user_message = request.json.get('message', '')
+    model = request.json.get('model', 'burta')
     if not user_message:
         return jsonify({'error': 'No input message provided.'}), 400
+    if not model or model not in ['burta', 'gpt2']:
+        return jsonify({'error': 'Invalid model provided.'}), 400
 
-    model = request.json.get('model', 'burta')
-    if model == 'burta':
-        if burta_generator:
-            try:
-                # Your existing logic for text generation
-                response = burta_generator(user_message, max_length=100, do_sample=True, num_return_sequences=1)
-                response_text = response[0]['generated_text']
-                return jsonify({'text': response_text})
-            except Exception as e:
-                logger.error(f"Error in chat route: {e}")
-                return jsonify({'error': 'An internal server error occurred'}), 500
-        else:
-            return jsonify({'error': 'Invalid API key'}), 400
-    elif model == 'gpt2':
-        if gpt2_generator:
-            try:
-                # Your existing logic for text generation
-                response = gpt2_generator(user_message, max_length=100, do_sample=True, num_return_sequences=1)
-                response_text = response[0]['generated_text']
-                return jsonify({'text': response_text})
-            except Exception as e:
-                logger.error(f"Error in chat route: {e}")
-                return jsonify({'error': 'An internal server error occurred'}), 500
-        else:
-            return jsonify({'error': 'Invalid API key'}), 
+    try:
+        response_text = generate_response(model, user_message)
+        return jsonify({'text': response_text})
+    except Exception as e:
+        logger.error(f"Error in chat route: {e}")
+        return jsonify({'error': 'An internal server error occurred'}), 500
+
+if __name__ == '__main__':
+    app.run(debug=True, host='0.0.0.0', port=5000)
+``
