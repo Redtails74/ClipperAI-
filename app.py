@@ -64,8 +64,9 @@ def generate_response(model, user_message):
 
 @app.route('/')
 def home():
-    return render_template('index.html')  # Assuming you have an index.html in your templates folder
-
+    with open(os.path.join(app.static_folder, 'index.html')) as f:
+        return f.read()
+        
 @app.route('/api/data')
 def get_data():
     data = {
