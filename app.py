@@ -1,17 +1,16 @@
 import os
 import json
-import random
-import string
-from flask import Flask, request, jsonify, render_template
-from flask_cors import CORS
 import logging
+from flask import Flask, request, jsonify
+
+from flask_cors import CORS
 from transformers import pipeline, AutoTokenizer, AutoModelForSequenceClassification, AutoModelForSeq2SeqLM
 
 # Setting up logger
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
-app = Flask(__name__, static_folder='static', template_folder='templates')
+app = Flask(__name__)  # Removed static and template folders
 CORS(app, resources={r"/api/*": {"origins": "*"}})
 
 app.config['PREFERRED_URL_SCHEME'] = 'https'
@@ -72,7 +71,7 @@ def home():
     # Serve the index.html file directly from the root directory
     with open('index.html') as f:
         return f.read()
-        
+
 @app.route('/api/data')
 def get_data():
     data = {
