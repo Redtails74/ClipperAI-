@@ -76,12 +76,12 @@
 </head>
 <body>
     <div id="app">
-     <img src="https://raw.githubusercontent.com/Redtails74/ClipperAI-/main/Code%20Clipper%20Logo-01.jpg" alt="Logo" />
-    <textarea id="input" placeholder="Type your message..."></textarea>
-    <button id="send">Send</button>
-    <div id="chat"></div>
-    <p id="output">Loading...</p>
-</div>
+        <img src="https://raw.githubusercontent.com/Redtails74/ClipperAI-/main/Code%20Clipper%20Logo-01.jpg" alt="Logo" />
+        <textarea id="input" placeholder="Type your message..."></textarea>
+        <button id="send">Send</button>
+        <div id="chat"></div>
+        <p id="output">Loading...</p>
+    </div>
 
     <script>
         const input = document.getElementById('input');
@@ -108,7 +108,7 @@
 
                 if (response.ok) {
                     const data = await response.json();
-                    updateChat('AI', data.text);
+                    updateChat('AI', data.response);
                 } else {
                     updateChat('Error', response.statusText);
                 }
