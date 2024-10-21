@@ -100,7 +100,7 @@
 
                 if (response.ok) {
                     const data = await response.json();
-                    updateChat('ChatGPT', data.response);
+                    updateChat('ChatGPT', data.text); // Changed this line
                 } else {
                     updateChat('Error', response.statusText);
                 }
@@ -115,4 +115,20 @@
 
         // Update chat function
         function updateChat(speaker, message) {
-            chatDiv.innerHTML += `<div><strong>${speaker}:
+            chatDiv.innerHTML += `<div><strong>${speaker}:</strong> ${message}</div>`;
+            chatDiv.scrollTop = chatDiv.scrollHeight; // Scroll to the bottom
+        }
+
+        // Add event listener for the send button
+        sendButton.addEventListener('click', sendMessage);
+
+        // Allow sending message with Enter key
+        input.addEventListener('keypress', function (e) {
+            if (e.key === 'Enter') {
+                sendMessage();
+                e.preventDefault(); // Prevent newline in textarea
+            }
+        });
+    </script>
+</body>
+</html>
