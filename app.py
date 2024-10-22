@@ -1,4 +1,4 @@
-from flask import Flask, request, jsonify, render_template
+from flask import Flask, request, jsonify, send_from_directory
 from flask_cors import CORS
 from transformers import pipeline, AutoTokenizer, AutoModelForCausalLM
 import torch
@@ -23,7 +23,7 @@ generator = pipeline('text-generation', model=model, tokenizer=tokenizer, device
 
 @app.route('/')
 def home():
-    return render_template('index.html', logo_path='Code Clipper Logo-01.jpg')
+    return send_from_directory('index.html', logo_path='Code Clipper Logo-01.jpg')
 
 @app.route('/api/chat', methods=['POST'])
 def chat():
