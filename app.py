@@ -23,7 +23,11 @@ generator = pipeline('text-generation', model=model, tokenizer=tokenizer, device
 
 @app.route('/')
 def home():
-    return send_from_directory('index.html', logo_path='Code Clipper Logo-01.jpg')
+    return send_from_directory('.', 'index.html')
+
+@app.route('/logo')
+def serve_logo():
+    return send_from_directory('.', 'Code Clipper Logo-01.jpg')
 
 @app.route('/api/chat', methods=['POST'])
 def chat():
