@@ -21,6 +21,10 @@ model = AutoModelForCausalLM.from_pretrained(model_name)
 tokenizer = AutoTokenizer.from_pretrained(model_name)
 generator = pipeline('text-generation', model=model, tokenizer=tokenizer, device=device)
 
+app.route('/')
+def home():
+    return send_from_directory('.', 'index.html')  # Serve index.html from the main directory
+
 @app.route('/api/chat', methods=['POST'])
 def chat():
     data = request.json
