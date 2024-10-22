@@ -39,9 +39,9 @@ def chat():
         response = generator(user_message, max_length=max_length, do_sample=do_sample, 
                               num_return_sequences=num_return_sequences, top_k=50, top_p=0.95)
         return jsonify({'response': response[0]['generated_text']})
-     except Exception as e:
-        logger.error(f"Error in chat route: {e}")
+    except Exception as e:
+        logger.error(f"An error occurred: {e}", exc_info=True)
         return jsonify({'error': str(e)}), 500
 
 if __name__ == '__main__':
-    app.run(debug=True, host='0.0.0.0', port=5000) 
+    app.run(debug=True, host='0.0.0.0', port=5000)
