@@ -3,10 +3,14 @@ from flask_cors import CORS
 from transformers import pipeline, AutoTokenizer, AutoModelForCausalLM
 import torch
 
+# Setting up logger
+logging.basicConfig(level=logging.INFO)
+logger = logging.getLogger(__name__)
+
 app = Flask(__name__)
 CORS(app, resources={r"/api/*": {"origins": "*"}})
 
-# Dynamic model loading
+API_KEY = os.getenv('HUGGINGFACE_API_KEY', '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')
 model_name = 'distilgpt2'  # Example model, consider using environment variable for flexibility
 device = 0 if torch.cuda.is_available() else -1
 
