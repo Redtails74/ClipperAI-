@@ -27,24 +27,17 @@ def home():
 
 @app.route('/api/chat', methods=['POST'])
 def chat():
-    data = request.json
-    user_message = data.get('message', '')
+    user_message = request.json.get('message', '')
     if not user_message:
-        logger.warning('No message provided in the request')  # Log when there's no message
         return jsonify({'error': 'No input message provided.'}), 400
 
-    try:
-        # Example of dynamic parameters
-        max_length = data.get('max_length', 100)
-        do_sample = data.get('do_sample', True)
-        num_return_sequences = data.get('num_return_sequences', 1)
-        
-        logger.info(f'Generating text for input: {user_message}')  # Log the input message
-        response = generator(user_message, max_length=max_length, do_sample=do_sample, 
-                              num_return_sequences=num_return_sequences, top_k=50, top_p=0.95)
-        return jsonify({'response': response[0]['generated_text']})
+   try:
+        # Generate response using the model
+        response = generator(user_message, max_length=100, do_sample=True, num_return_sequences=1, truncation=True)
+        response_text = response[0]['generated_text']  # Access the generated text
+        return jsonify({'response': response_text})
     except Exception as e:
-        logger.error(f"An error occurred: {e}", exc_info=True)
+        logger.error(f"Error in chat route: {e}")
         return jsonify({'error': str(e)}), 500
 
 if __name__ == '__main__':
