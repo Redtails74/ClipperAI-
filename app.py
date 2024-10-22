@@ -21,7 +21,7 @@ model = AutoModelForCausalLM.from_pretrained(model_name)
 tokenizer = AutoTokenizer.from_pretrained(model_name)
 generator = pipeline('text-generation', model=model, tokenizer=tokenizer, device=device)
 
-app.route('/')
+@app.route('/')  # Fixed the decorator
 def home():
     return send_from_directory('.', 'index.html')  # Serve index.html from the main directory
 
@@ -31,7 +31,7 @@ def chat():
     if not user_message:
         return jsonify({'error': 'No input message provided.'}), 400
 
-   try:
+    try:
         # Generate response using the model
         response = generator(user_message, max_length=100, do_sample=True, num_return_sequences=1, truncation=True)
         response_text = response[0]['generated_text']  # Access the generated text
