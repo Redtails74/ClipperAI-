@@ -27,7 +27,7 @@ def home():
 
 @app.route('/logo')
 def serve_logo():
-    return send_from_directory('.', 'Code Clipper Logo-01.jpg')
+    return send_from_directory('static', 'Code Clipper Logo-01.jpg')
 
 @app.route('/api/chat', methods=['POST'])
 def chat():
