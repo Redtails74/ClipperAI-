@@ -1,4 +1,4 @@
-from flask import Flask, request, jsonify, send_from_directory, url_for
+from flask import Flask, request, jsonify, send_from_directory
 from flask_cors import CORS
 from transformers import pipeline, AutoTokenizer, AutoModelForCausalLM
 import torch
@@ -47,4 +47,3 @@ def chat():
         logger.error(f"Error in chat route: {e}")
         return jsonify({'error': str(e)}), 500
 
-    app.run(debug=True, host='0.0.0.0', port=5000)
