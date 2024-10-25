@@ -25,6 +25,10 @@ generator = pipeline('text-generation', model=model, tokenizer=tokenizer, device
 def home():
     return send_from_directory('.', 'index.html')
 
+@app.route('/health', methods=['GET'])
+def health_check():
+    return jsonify({'status': 'healthy'})
+
 @app.route('/logo')
 def serve_logo():
     return send_from_directory('static', 'Code Clipper Logo-01.jpg')
