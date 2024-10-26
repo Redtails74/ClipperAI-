@@ -72,11 +72,11 @@
         button:hover {
             background-color: #0056b3;
         }
-    </style>
+     </style>
 </head>
 <body>
-     <div id="app">
-        <img src="static/code_clipper_logo.jpg" alt="Clipper Logo" />
+    <div id="app">
+        <img src="{{ url_for('static', filename='code_clipper_logo.jpg') }}" alt="Clipper Logo" />
         <textarea id="input" placeholder="Type your message..."></textarea>
         <button id="send">Send</button>
         <div id="chat"></div>
@@ -89,10 +89,9 @@
         const chatDiv = document.getElementById('chat');
         const output = document.getElementById('output');
 
-        // Function to send user input and receive a response
         async function sendMessage() {
             const message = input.value.trim();
-            if (!message) return; // Prevent empty input
+            if (!message) return;
 
             updateChat('User', message);
             output.textContent = "Loading...";
@@ -120,22 +119,23 @@
             output.textContent = "";
         }
 
-        // Update chat function
         function updateChat(speaker, message) {
             chatDiv.innerHTML += `<div><strong>${speaker}:</strong> ${message}</div>`;
-            chatDiv.scrollTop = chatDiv.scrollHeight; // Scroll to the bottom
+            chatDiv.scrollTop = chatDiv.scrollHeight;
         }
 
-        // Add event listener for the send button
         sendButton.addEventListener('click', sendMessage);
 
-        // Allow sending message with Enter key
         input.addEventListener('keypress', function(e) {
             if (e.key === 'Enter' && !e.shiftKey) {
                 sendMessage();
-                e.preventDefault(); // Prevent newline in textarea
+                e.preventDefault(); 
             }
         });
+    </script>
+</body>
+</html>
+
     </script>
 </body>
 </html>
