@@ -14,7 +14,7 @@ CORS(app, resources={r"/api/*": {"origins": "*"}})
 
 API_KEY = os.getenv('HUGGINGFACE_API_KEY', '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')
 model_name = 'distilgpt2'
-device = 0 if torch.cuda.is_available() else -1
+device = -1  # Forces the use of CPU
 
 # Load model and tokenizer
 model = AutoModelForCausalLM.from_pretrained(model_name)
