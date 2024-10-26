@@ -17,24 +17,36 @@ model_name = 'EleutherAI/gpt-neo-1.3B'  # Using GPT-Neo
 device = -1  # Use CPU; set to 0 for GPU if available
 
 # Load model and tokenizer
-model = AutoModelForCausalLM.from_pretrained(model_name)
-tokenizer = AutoTokenizer.from_pretrained(model_name)
-generator = pipeline('text-generation', model=model, tokenizer=tokenizer, device=device)
+try:
+    model = AutoModelForCausalLM.from_pretrained(model_name)
+    tokenizer = AutoTokenizer.from_pretrained(model_name)
+    generator = pipeline('text-generation', model=model, tokenizer=tokenizer, device=device)
+except Exception as e:
+    logger.error(f"Error loading model or tokenizer: {e}")
+    raise
 
 @app.route('/')
 def home():
+    """Serve the homepage."""
     return send_from_directory('.', 'index.html')
 
 @app.route('/health', methods=['GET'])
 def health_check():
+    """Health check endpoint."""
     return jsonify({'status': 'healthy'})
 
 @app.route('/logo')
 def serve_logo():
-    return send_from_directory('static', 'Code Clipper Logo-01.jpg')
+    """Serve the logo image."""
+    try:
+        return send_from_directory('static', 'Code Clipper Logo-01.jpg')
+    except FileNotFoundError:
+        logger.error("Logo file not found.")
+        return jsonify({'error': 'Logo not found'}), 404
 
 @app.route('/api/chat', methods=['POST'])
 def chat():
+    """Chat API endpoint."""
     user_message = request.json.get('message', '')
     if not user_message:
         return jsonify({'error': 'No input message provided.'}), 400
