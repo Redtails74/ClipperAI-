@@ -115,6 +115,30 @@
         const sendButton = document.getElementById('send');
         const chatDiv = document.getElementById('chat');
 
+        input.addEventListener('input', async function() {
+            const message = input.value.trim();
+            if (!message) return;
+
+            try {
+                const response = await fetch('/api/chat', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({ message })
+                });
+
+                if (response.ok) {
+                    const data = await response.json();
+                    updateChat('AI', data.response);
+                } else {
+                    updateChat('Error', response.statusText);
+                }
+            } catch (error) {
+                updateChat('Error', error.message);
+            }
+        });
+
         async function sendMessage() {
             const message = input.value.trim();
             if (!message) return;
@@ -144,26 +168,4 @@
             input.value = '';
         }
 
-        function updateChat(speaker, message, isLoading = false) {
-            chatDiv.innerHTML += `<div><strong>${speaker}:</strong> ${message}</div>`;
-            chatDiv.scrollTop = chatDiv.scrollHeight;
-
-            // If it's a loading message, we can remove it after a delay
-            if (isLoading) {
-                setTimeout(() => {
-                    chatDiv.lastChild.remove();
-                }, 1000); // Adjust this delay as needed
-            }
-        }
-
-        sendButton.addEventListener('click', sendMessage);
-
-        input.addEventListener('keypress', function(e) {
-            if (e.key === 'Enter' && !e.shiftKey) {
-                sendMessage();
-                e.preventDefault(); 
-            }
-        });
-    </script>
-</body>
-</html>
+        function updateChat(speaker
