@@ -72,7 +72,13 @@
         button:hover {
             background-color: #0056b3;
         }
-     </style>
+
+        /* Loading styles */
+        .loading {
+            font-style: italic;
+            color: #aaa;
+        }
+    </style>
 </head>
 <body>
     <div id="app">
@@ -80,21 +86,19 @@
         <textarea id="input" placeholder="Type your message..."></textarea>
         <button id="send">Send</button>
         <div id="chat"></div>
-        <p id="output">Loading...</p>
     </div>
 
     <script>
         const input = document.getElementById('input');
         const sendButton = document.getElementById('send');
         const chatDiv = document.getElementById('chat');
-        const output = document.getElementById('output');
 
         async function sendMessage() {
             const message = input.value.trim();
             if (!message) return;
 
             updateChat('User', message);
-            output.textContent = "Loading...";
+            updateChat('AI', 'Loading...', true); // Show loading message
 
             try {
                 const response = await fetch('/api/chat', {
@@ -116,12 +120,18 @@
             }
 
             input.value = '';
-            output.textContent = "";
         }
 
-        function updateChat(speaker, message) {
+        function updateChat(speaker, message, isLoading = false) {
             chatDiv.innerHTML += `<div><strong>${speaker}:</strong> ${message}</div>`;
             chatDiv.scrollTop = chatDiv.scrollHeight;
+
+            // If it's a loading message, we can remove it after a delay
+            if (isLoading) {
+                setTimeout(() => {
+                    chatDiv.lastChild.remove();
+                }, 1000); // Adjust this delay as needed
+            }
         }
 
         sendButton.addEventListener('click', sendMessage);
@@ -132,10 +142,6 @@
                 e.preventDefault(); 
             }
         });
-    </script>
-</body>
-</html>
-
     </script>
 </body>
 </html>
