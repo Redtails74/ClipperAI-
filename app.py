@@ -48,8 +48,8 @@ def chat():
             do_sample=True,
             num_return_sequences=2,
             temperature=0.5,  # Balanced temperature for clarity
-            top_k=35,  # Slightly reduced for more focused outputs
-            top_p=0.7,
+            top_k=60,  # Slightly reduced for more focused outputs
+            top_p=0.5,
             repetition_penalty=1.5,  # Keep reducing repetition
             truncation=True
         )
