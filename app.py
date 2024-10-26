@@ -1,4 +1,4 @@
-from flask import Flask, request, jsonify, send_from_directory
+from flask import Flask, request, jsonify, render_template, send_from_directory
 from flask_cors import CORS
 from transformers import pipeline, AutoTokenizer, AutoModelForCausalLM
 import logging
@@ -30,8 +30,11 @@ conversation_memory = []
 
 @app.route('/')
 def home():
-    """Serve the homepage."""
-    return send_from_directory('.', 'index.html')
+    """Serve the homepage with logo option."""
+    show_logo = request.args.get('logo', 'yes') == 'yes'  # Check for URL parameter
+    return render_template('index.html', show_logo=show_logo)
+
+# Other routes remain as they are, or update accordingly:
 
 @app.route('/health', methods=['GET'])
 def health_check():
@@ -128,4 +131,4 @@ def add_header(response):
     return response
 
 if __name__ == '__main__':
-    app.run(debug=True)
+    app.run(debug=True, extra_files=['templates/'])
