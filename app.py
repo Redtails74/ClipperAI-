@@ -13,7 +13,7 @@ CORS(app, resources={r"/api/*": {"origins": "*"}})
 
 # Load environment variables
 API_KEY = os.getenv('HUGGINGFACE_API_KEY', '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')
-model_name = 'EleutherAI/gpt-neo-125M'  # Changed to GPT-Neo
+model_name = 'EleutherAI/gpt-neo-125M'  # Using GPT-Neo
 device = -1  # Use CPU; set to 0 for GPU if available
 
 # Load model and tokenizer
@@ -40,17 +40,17 @@ def chat():
         return jsonify({'error': 'No input message provided.'}), 400
 
     try:
-        # Improved prompt to encourage a more natural conversation
-        prompt = f"User: {user_message}\nAI: Let's have a conversation about it:"
+        # Enhanced prompt to foster a more engaging conversation
+        prompt = f"User: {user_message}\nAI: What do you think about that?"
         response = generator(
             prompt,
             max_length=150,
             do_sample=True,
             num_return_sequences=1,
-            temperature=0.8,  # Increased variability
+            temperature=0.9,  # Higher temperature for more variability
             top_k=50,
             top_p=0.9,
-            repetition_penalty=1.2,  # Penalize repetition
+            repetition_penalty=1.5,  # Stronger penalty against repetition
             truncation=True
         )
         response_text = response[0]['generated_text'].strip().split('AI:')[-1].strip()  # Clean up response
