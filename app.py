@@ -46,9 +46,9 @@ def chat():
             prompt,
             max_length=250,
             do_sample=True,
-            num_return_sequences=2,
+            num_return_sequences=1,
             temperature=0.5,  # Balanced temperature for clarity
-            top_k=60,  # Slightly reduced for more focused outputs
+            top_k=40,  # Slightly reduced for more focused outputs
             top_p=0.5,
             repetition_penalty=1.5,  # Keep reducing repetition
             truncation=True
