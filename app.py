@@ -41,7 +41,7 @@ def chat():
 
     try:
         # Direct and relevant prompt
-        prompt = f"User: {user_message}\nAI: "
+        prompt = f"User: {user_message}\nAI: That's an interesting point. Let's explore that further."
         response = generator(
             prompt,
             max_length=150,
