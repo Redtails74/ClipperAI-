@@ -68,8 +68,10 @@ def chat():
         )
 
         generated_text = response[0].get('generated_text', '').strip()
+        logger.info(f"Generated Text: {generated_text}")
         response_text = extract_response(generated_text)
-
+        logger.info(f"Extracted Response: {response_text}")
+                
         # Add AI's response to conversation memory
         conversation_memory.append({"role": "assistant", "content": response_text})
 
