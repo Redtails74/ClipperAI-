@@ -44,7 +44,7 @@ def chat():
         prompt = f"User: {user_message}\nAI: That's an interesting point. Let's explore that further."
         response = generator(
             prompt,
-            max_length=250,
+            max_length=150,
             do_sample=True,
             num_return_sequences=1,
             temperature=0.5,  # Balanced temperature for clarity
