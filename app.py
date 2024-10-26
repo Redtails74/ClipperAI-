@@ -33,21 +33,13 @@ conversation_memory = []
 
 @app.route('/')
 def home():
-    """Serve the homepage with logo option."""
-    show_logo = request.args.get('logo', 'yes') == 'yes'  # Check for URL parameter
-    return render_template('index.html', show_logo=show_logo)
-
-# Other routes remain as they are, or update accordingly:
+    """Serve the homepage."""
+    return render_template('index.html')
 
 @app.route('/health', methods=['GET'])
 def health_check():
     """Health check endpoint."""
     return jsonify({'status': 'healthy'})
-
-@app.route('/logo')
-def serve_logo():
-    """Serve the logo image."""
-    return send_from_directory('static', 'code_clipper_logo.jpg')
 
 @app.route('/api/chat', methods=['POST'])
 def chat():
@@ -77,10 +69,6 @@ def chat():
 
         generated_text = response[0].get('generated_text', '').strip()
         response_text = extract_response(generated_text)
-        
-        # Check for generic response and regenerate if necessary
-        if is_generic_response(response_text):
-            response_text = regenerate_response(prompt, user_message, generator, max_length=150)
 
         # Add AI's response to conversation memory
         conversation_memory.append({"role": "assistant", "content": response_text})
@@ -103,27 +91,6 @@ def extract_response(text):
         return text.split('AI:')[-1].strip()
     return text
 
-def is_generic_response(response):
-    """Check if response is too generic."""
-    generic_phrases = ["discuss", "Let's talk", "topic further", "Let's explore"]
-    return any(phrase in response.lower() for phrase in generic_phrases)
-
-def regenerate_response(prompt, user_message, generator, max_length):
-    """Regenerate response with a more specific prompt."""
-    specific_prompt = f"{prompt} Provide detailed information or a solution regarding '{user_message}'."
-    response = generator(
-        specific_prompt,
-        max_length=max_length,
-        do_sample=True,
-        num_return_sequences=1,
-        temperature=0.7,
-        top_k=20,
-        top_p=0.8,
-        repetition_penalty=2.0,
-        truncation=True
-    )
-    return extract_response(response[0].get('generated_text', '').strip())
-
 # For template reloading
 @app.after_request
 def add_header(response):
@@ -134,4 +101,4 @@ def add_header(response):
     return response
 
 if __name__ == '__main__':
-    app.run(debug=True, extra_files=['templates/'])
+    app.run(debug=True)
