@@ -37,12 +37,7 @@ def health_check():
 
 @app.route('/logo')
 def serve_logo():
-    """Serve the logo image."""
-    try:
-        return send_from_directory('static', 'Code Clipper Logo-01.jpg')
-    except FileNotFoundError:
-        logger.error("Logo file not found.")
-        return jsonify({'error': 'Logo not found'}), 404
+    return send_from_directory('static', 'Code Clipper Logo-01.jpg')
 
 @app.route('/api/chat', methods=['POST'])
 def chat():
