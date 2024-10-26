@@ -16,6 +16,7 @@
             font-family: Arial, sans-serif;
             background-color: #f9f9f9;
             display: flex;
+            flex-direction: column;
             justify-content: center;
             align-items: center;
             min-height: 100vh;
@@ -98,7 +99,7 @@
 <body>
     <div id="app">
         <div class="logo-container">
-            <img src="{{ url_for('static', filename='code_clipper_logo.jpg') }}" alt="Clipper Logo" />
+            <img src="/static/code_clipper_logo.jpg" alt="Clipper Logo" />
         </div>
         <textarea id="input" placeholder="Type your message..."></textarea>
         <button id="send">Send</button>
