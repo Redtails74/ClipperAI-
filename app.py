@@ -40,17 +40,17 @@ def chat():
         return jsonify({'error': 'No input message provided.'}), 400
 
     try:
-        # More specific prompt
-        prompt = f"User: {user_message}\nAI: What are your thoughts on that?"
+        # More engaging prompt
+        prompt = f"User: {user_message}\nAI: Let's discuss that. What are your thoughts?"
         response = generator(
             prompt,
             max_length=150,
             do_sample=True,
             num_return_sequences=1,
-            temperature=0.9,  # Higher temperature for more variability
+            temperature=0.9,
             top_k=50,
-            top_p=0.95,  # Slightly increase top_p for more diverse sampling
-            repetition_penalty=1.5,  # Stronger penalty against repetition
+            top_p=0.95,
+            repetition_penalty=1.6,  # Stronger penalty against repetition
             truncation=True
         )
         response_text = response[0]['generated_text'].strip().split('AI:')[-1].strip()  # Clean up response
