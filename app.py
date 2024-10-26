@@ -36,11 +36,6 @@ def home():
     """Serve the homepage."""
     return render_template('index.html')
 
-@app.route('/health', methods=['GET'])
-def health_check():
-    """Health check endpoint."""
-    return jsonify({'status': 'healthy'})
-
 @app.route('/api/chat', methods=['POST'])
 def chat():
     """Chat API endpoint with context retention and relevance enhancement."""
@@ -54,24 +49,31 @@ def chat():
     try:
         # Construct prompt with context
         prompt = construct_prompt(conversation_memory, user_message)
+
+        # Start timing the response generation
+        start_time = time.time()
         
+        # Generate response with optimized parameters
         response = generator(
             prompt,
-            max_length=200,
+            max_length=100,  # Reduce max_length for faster responses
             do_sample=True,
             num_return_sequences=1,
-            temperature=0.6,
-            top_k=40,
-            top_p=0.9,
-            repetition_penalty=2.5,
+            temperature=0.5,  # Adjust temperature for a more focused response
+            top_k=30,         # Reduce top_k for faster sampling
+            top_p=0.85,       # Adjust top_p to limit token choices
+            repetition_penalty=1.5,  # Moderate repetition penalty
             truncation=True
         )
+
+        # Log the time taken for generation
+        logger.info(f"Time taken for generation: {time.time() - start_time:.2f} seconds")
 
         generated_text = response[0].get('generated_text', '').strip()
         logger.info(f"Generated Text: {generated_text}")
         response_text = extract_response(generated_text)
         logger.info(f"Extracted Response: {response_text}")
-                
+
         # Add AI's response to conversation memory
         conversation_memory.append({"role": "assistant", "content": response_text})
 
