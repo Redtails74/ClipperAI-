@@ -1,7 +1,6 @@
 from flask import Flask, request, jsonify, send_from_directory
 from flask_cors import CORS
 from transformers import pipeline, AutoTokenizer, AutoModelForCausalLM
-import torch
 import logging
 import os
 
@@ -14,7 +13,7 @@ CORS(app, resources={r"/api/*": {"origins": "*"}})
 
 # Load environment variables
 API_KEY = os.getenv('HUGGINGFACE_API_KEY', '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')
-model_name = 'distilgpt2'
+model_name = 'EleutherAI/gpt-neo-125M'  # Changed to GPT-Neo
 device = -1  # Use CPU; set to 0 for GPU if available
 
 # Load model and tokenizer
@@ -41,20 +40,24 @@ def chat():
         return jsonify({'error': 'No input message provided.'}), 400
 
     try:
-        # Frame the input message for better context
-        prompt = f"User: {user_message}\nAI:"
+        # Improved prompt to encourage a more natural conversation
+        prompt = f"User: {user_message}\nAI: Let's have a conversation about it:"
         response = generator(
             prompt,
             max_length=150,
             do_sample=True,
             num_return_sequences=1,
-            temperature=0.7,
+            temperature=0.8,  # Increased variability
             top_k=50,
             top_p=0.9,
+            repetition_penalty=1.2,  # Penalize repetition
             truncation=True
         )
-        response_text = response[0]['generated_text'].strip()
+        response_text = response[0]['generated_text'].strip().split('AI:')[-1].strip()  # Clean up response
         return jsonify({'response': response_text})
     except Exception as e:
         logger.error(f"Error in chat route: {e}")
         return jsonify({'error': str(e)}), 500
+
+if __name__ == '__main__':
+    app.run(debug=True)
