@@ -46,6 +46,11 @@ def chat():
     # Add user message to conversation memory
     conversation_memory.append({"role": "user", "content": user_message})
 
+    # Limit conversation history to the last N messages
+    MAX_HISTORY = 5  # Adjust this value as needed
+    if len(conversation_memory) > MAX_HISTORY:
+        conversation_memory.pop(0)
+
     try:
         # Construct prompt with context
         prompt = construct_prompt(conversation_memory, user_message)
@@ -56,12 +61,12 @@ def chat():
         # Generate response with optimized parameters
         response = generator(
             prompt,
-            max_length=100,  # Reduce max_length for faster responses
+            max_length=100,  # Keep this reduced for faster responses
             do_sample=True,
             num_return_sequences=1,
-            temperature=0.5,  # Adjust temperature for a more focused response
-            top_k=30,         # Reduce top_k for faster sampling
-            top_p=0.85,       # Adjust top_p to limit token choices
+            temperature=0.5,  # Focused response
+            top_k=30,         # Faster sampling
+            top_p=0.85,       # Limit token choices
             repetition_penalty=1.5,  # Moderate repetition penalty
             truncation=True
         )
