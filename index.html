@@ -99,7 +99,7 @@
 <body>
     <div id="app">
         <div class="logo-container">
-            <img src="/static/code_clipper_logo.jpg" alt="Clipper Logo" />
+            <img src="{{ url_for('static', filename='code_clipper_logo.jpg') }}" alt="Clipper Logo" />
         </div>
         <textarea id="input" placeholder="Type your message..."></textarea>
         <button id="send">Send</button>
