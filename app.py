@@ -37,6 +37,7 @@ def health_check():
 
 @app.route('/logo')
 def serve_logo():
+    """Serve the logo image."""
     return send_from_directory('static', 'code_clipper_logo.jpg')
 
 @app.route('/api/chat', methods=['POST'])
@@ -60,10 +61,19 @@ def chat():
             repetition_penalty=1.5,  # Keep reducing repetition
             truncation=True
         )
-        response_text = response[0]['generated_text'].strip().split('AI:')[-1].strip()  # Clean up response
+
+        # Process response
+        generated_text = response[0].get('generated_text', '').strip()  # Use get to avoid KeyError
+        # Split only if "AI:" is in the text
+        if "AI:" in generated_text:
+            response_text = generated_text.split('AI:')[-1].strip()
+        else:
+            response_text = generated_text  # Fallback to the full text if "AI:" is not found
+
         return jsonify({'response': response_text})
+
     except Exception as e:
-        logger.error(f"Error in chat route: {e}")
+        logger.error(f"Error processing response: {e}")
         return jsonify({'error': str(e)}), 500
 
 if __name__ == '__main__':
