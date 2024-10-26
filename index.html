@@ -39,7 +39,7 @@
             margin-bottom: 20px; /* Space between logo and content */
         }
 
-        img {
+        .logo {
             max-width: 100%; /* Ensures the image scales responsively */
             height: auto;
         }
@@ -83,7 +83,7 @@
 <body>
     <div id="app">
         <div class="logo-container">
-            <img src="{{ url_for('static', filename='code_clipper_logo.jpg') }}" alt="Clipper Logo">
+            <img src="{{ url_for('static', filename='code_clipper_logo.jpg') }}" alt="Clipper Logo" class="logo">
         </div>
         <textarea id="input" placeholder="Type your message..."></textarea>
         <button id="send">Send</button>
