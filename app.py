@@ -49,16 +49,16 @@ def chat():
 
     try:
         # Direct and relevant prompt
-        prompt = f"User: {user_message}\nAI: That's an interesting point. Let's explore that further."
+        prompt = f"User: {user_message}\nAI: Let's discuss this topic further."
         response = generator(
             prompt,
             max_length=150,
             do_sample=True,
             num_return_sequences=1,
-            temperature=0.5,  # Balanced temperature for clarity
-            top_k=40,  # Slightly reduced for more focused outputs
-            top_p=0.5,
-            repetition_penalty=1.5,  # Keep reducing repetition
+            temperature=0.7,  # Increased temperature for more variability
+            top_k=20,  # Adjusted for focus
+            top_p=0.8,  # Allowing more diversity
+            repetition_penalty=2.0,  # Higher penalty to reduce repetition
             truncation=True
         )
 
