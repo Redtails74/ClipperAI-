@@ -13,7 +13,7 @@ CORS(app, resources={r"/api/*": {"origins": "*"}})
 
 # Load environment variables
 API_KEY = os.getenv('HUGGINGFACE_API_KEY', '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')
-model_name = 'EleutherAI/gpt-neo-125M'  # Using GPT-Neo
+model_name = 'EleutherAI/gpt-neo-1.3B'  # Using GPT-Neo
 device = -1  # Use CPU; set to 0 for GPU if available
 
 # Load model and tokenizer
