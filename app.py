@@ -62,7 +62,7 @@ def chat():
         # Generate response with optimized parameters
         response = generator(
             prompt,
-            max_length=100,  # Keep this reduced for faster responses
+            max_length=200,  # Keep this reduced for faster responses
             do_sample=True,
             num_return_sequences=1,
             temperature=0.5,  # Focused response
