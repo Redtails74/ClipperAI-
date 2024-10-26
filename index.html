@@ -34,15 +34,16 @@
         }
 
         .logo-container {
-            width: auto;
-            max-width: 100px; /* Set a max width for the logo */
-            text-align: center;
+            display: flex; /* Use flexbox for centering */
+            justify-content: center; /* Center the content horizontally */
+            align-items: center; /* Center the content vertically */
+            width: 100%; /* Take full width of the app */
             margin-bottom: 20px; /* Space between logo and content */
         }
 
         .logo {
-            max-width: 100%; /* Ensures the image scales responsively */
-            height: auto;
+            max-width: 100px; /* Set a max width for the logo */
+            height: auto; /* Maintain aspect ratio */
         }
 
         textarea, button, #chat {
