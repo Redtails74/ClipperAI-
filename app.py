@@ -4,6 +4,7 @@ from transformers import pipeline, AutoTokenizer, AutoModelForCausalLM
 import logging
 import time
 import os
+from collections import Counter
 
 # Configuration class
 class Config:
@@ -44,11 +45,8 @@ def home():
 @app.route('/api/chat', methods=['POST'])
 def chat():
     """Chat API endpoint with context retention and relevance enhancement."""
-    user_message = request.json.get('message', '')
-    if not isinstance(user_message, str):
-        return jsonify({'error': 'Invalid input message'}), 400
-
-    if not user_message.strip():
+    user_message = request.json.get('message', '').strip().lower()
+    if not user_message:
         return jsonify({'error': 'No input message provided'}), 400
 
     # Add user message to conversation memory
@@ -59,6 +57,15 @@ def chat():
         conversation_memory.pop(0)
 
     try:
+        # Detect repetition
+        user_history = [msg['content'].lower() for msg in conversation_memory if msg['role'] == 'user']
+        most_common = Counter(user_history).most_common(1)
+        
+        # Check if the user is repeating
+        if most_common[0][1] > 1:  # If a message is repeated
+            if most_common[0][0] in ["hmm...how do you know", "trying again"]:
+                return jsonify({'response': handle_repetition(conversation_memory), 'conversation': conversation_memory})
+
         # Construct prompt with context
         prompt = construct_prompt(conversation_memory, user_message)
 
@@ -68,28 +75,20 @@ def chat():
         # Generate response with optimized parameters
         response = generator(
             prompt,
-            max_length=200,  # Adjusted based on typical response length
-            do_sample=True,  # Use sampling for more diverse outputs
+            max_length=200,
+            do_sample=True,
             num_return_sequences=1,
-            temperature=0.7,  # Temperature between 0.6 and 0.8 for balance
-            top_k=50,        # Increased for more diversity in token selection
-            top_p=0.95,      # Increased for more creative output
-            repetition_penalty=1.2,  # Adjusted for less repetition
-            num_beams=3,     # Reduced to keep generation efficient
+            temperature=0.7,
+            top_k=50,
+            top_p=0.95,
+            repetition_penalty=1.2,
+            num_beams=3,
             early_stopping=True,
             truncation=True
         )
 
-        # Log the time taken for generation
-        logger.info(f"Time taken for generation: {time.time() - start_time:.2f} seconds")
-
         generated_text = response[0].get('generated_text', '').strip()
-        if not generated_text:
-            return jsonify({'error': 'No response generated'}), 500
-
-        logger.info(f"Generated Text: {generated_text}")
         response_text = extract_response(generated_text)
-        logger.info(f"Extracted Response: {response_text}")
 
         # Add AI's response to conversation memory
         conversation_memory.append({"role": "assistant", "content": response_text})
@@ -100,14 +99,22 @@ def chat():
         logger.error(f"Error during chat processing: {e}")
         return jsonify({'error': 'Internal server error'}), 500
 
+def handle_repetition(conversation_memory):
+    """Handle repetitive inputs by providing varied or more interactive responses."""
+    user_last_message = conversation_memory[-1]['content'].lower()
+    if "how do you know" in user_last_message:
+        return "I can look up information from various sources or use patterns from past conversations. What's the context you're referring to?"
+    elif "trying again" in user_last_message:
+        return "Sometimes it's good to try again. What are you attempting to achieve?"
+    else:
+        return "It seems we're looping. Can you elaborate on your question or try something new?"
+
 def construct_prompt(conversation_memory, user_message):
     """Construct a prompt based on conversation history."""
-    # Joining messages with newlines for better context separation
     return "\n".join([f"{msg['role']}: {msg['content']}" for msg in conversation_memory] + [f"user: {user_message}"]) + "\nassistant:"
 
 def extract_response(generated_text):
     """Extract the assistant's reply from the generated text."""
-    # Assuming the response starts after the last \nassistant:
     return generated_text.split("\nassistant:")[-1].strip()
 
 if __name__ == '__main__':
