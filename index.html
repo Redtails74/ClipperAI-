@@ -4,99 +4,24 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Clipper AI</title>
-    <style>
-        body, html {
-            margin: 0;
-            padding: 0;
-            height: 100%; /* Ensure body and html take full height */
-            font-family: 'Arial', sans-serif; /* Use a similar font to ChatGPT */
-        }
-
-        body {
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            background-color: #f9f9f9;
-        }
-
-        #app {
-            width: 90%;
-            max-width: 800px; /* Increased max-width for larger screens */
-            height: 90%; /* Set height to 90% of the viewport */
-            padding: 20px;
-            background: white;
-            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
-            border-radius: 8px;
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            overflow: auto; /* Allow scrolling if content overflows */
-        }
-
-        .logo-container {
-            display: flex; /* Use flexbox for centering */
-            justify-content: center; /* Center the content horizontally */
-            align-items: center; /* Center the content vertically */
-            width: 100%; /* Take full width of the app */
-            margin-bottom: 20px; /* Space between logo and content */
-        }
-
-        .logo {
-            max-width: 100px; /* Set a max width for the logo */
-            height: auto; /* Maintain aspect ratio */
-        }
-
-        textarea, button, #chat {
-            width: 100%; /* Full width within the app container */
-            margin-top: 10px; /* Space between elements */
-        }
-
-        textarea {
-            height: 80px; /* Slightly reduced height */
-            padding: 10px;
-            border: 1px solid #ccc;
-            border-radius: 4px;
-            resize: vertical;
-            font-size: 14px; /* Set font size */
-            color: #333; /* Softer font color */
-            background-color: #f0f0f0; /* Light background for the input */
-        }
-
-        button {
-            padding: 10px 20px;
-            background-color: #007bff;
-            color: white;
-            border: none;
-            border-radius: 4px;
-            cursor: pointer;
-            font-size: 14px; /* Match font size */
-        }
-
-        button:hover {
-            background-color: #0056b3;
-        }
-
-        #chat {
-            border: 1px solid #ccc;
-            padding: 10px;
-            max-height: 300px; /* Fixed height for the chat box */
-            overflow-y: auto; /* Enable vertical scrolling */
-            background: #f7f7f7;
-            border-radius: 4px;
-            color: #333; /* Softer font color for chat */
-        }
-    </style>
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
 </head>
 <body>
-    <div id="app">
+    <header>
         <div class="logo-container">
-        <img src="{{ url_for('static', filename='code_clipper_logo.jpg') }}" alt="Clipper Logo" class="logo">
+            <img src="{{ url_for('static', filename='code_clipper_logo.jpg') }}" alt="Clipper Logo" class="logo">
         </div>
-        <textarea id="input" placeholder="Type your message..."></textarea>
-        <button id="send">Send</button>
-        <div id="chat"></div>
-    </div>
-
+    </header>
+    <main>
+        <div id="app">
+            <div class="logo-container">
+                <img src="{{ url_for('static', filename='code_clipper_logo.jpg') }}" alt="Clipper Logo" class="logo">
+            </div>
+            <textarea id="input" placeholder="Type your message..."></textarea>
+            <button id="send">Send</button>
+            <div id="chat"></div>
+        </div>
+    </main>
     <script>
         const input = document.getElementById('input');
         const sendButton = document.getElementById('send');
