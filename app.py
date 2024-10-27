@@ -62,31 +62,28 @@ def chat():
         most_common = Counter(user_history).most_common(1)
         
         if most_common[0][1] > 1:  # If a message is repeated more than once
-            if re.search(r'\bwhat|where|when|why|how\b', user_message):
-                return jsonify({'response': handle_question_repetition(conversation_memory), 'conversation': conversation_memory})
-            else:
-                return jsonify({'response': handle_repetition(conversation_memory), 'conversation': conversation_memory})
+            response_text = handle_repetition(conversation_memory)
+        else:
+            # Construct prompt with context
+            prompt = construct_prompt(conversation_memory, user_message)
 
-        # Construct prompt with context
-        prompt = construct_prompt(conversation_memory, user_message)
+            # Generate response with optimized parameters
+            response = generator(
+                prompt,
+                max_length=200,
+                do_sample=True,
+                num_return_sequences=1,
+                temperature=0.7,
+                top_k=50,
+                top_p=0.95,
+                repetition_penalty=1.2,
+                num_beams=3,
+                early_stopping=True,
+                truncation=True
+            )
 
-        # Generate response with optimized parameters
-        response = generator(
-            prompt,
-            max_length=200,
-            do_sample=True,
-            num_return_sequences=1,
-            temperature=0.7,
-            top_k=50,
-            top_p=0.95,
-            repetition_penalty=1.2,
-            num_beams=3,
-            early_stopping=True,
-            truncation=True
-        )
-
-        generated_text = response[0].get('generated_text', '').strip()
-        response_text = extract_response(generated_text)
+            generated_text = response[0].get('generated_text', '').strip()
+            response_text = extract_response(generated_text)
 
         # Filter out inappropriate language
         response_text = filter_inappropriate_words(response_text)
@@ -101,15 +98,11 @@ def chat():
         return jsonify({'error': 'Internal server error'}), 500
 
 def handle_repetition(conversation_memory):
-    user_last_message = conversation_memory[-1]['content'].lower()
-    if "better" in user_last_message:
-        return "I'm here to help. Is there something specific you'd like to improve or discuss?"
+    user_last_message = conversation_memory[-1]['content']
+    if re.search(r'\btry\b', user_last_message, re.IGNORECASE):
+        return "Are you finding what you're looking for? Maybe we can switch topics or try something new."
     else:
-        return "It seems we're repeating ourselves. Can you ask something new or clarify your last question?"
-
-def handle_question_repetition(conversation_memory):
-    # This could be expanded with more specific logic for different types of questions
-    return "I see you're asking about that again. Here's some more information or perhaps a different perspective:"
+        return "It seems we might be stuck in a loop. Can we explore something else or do you have a different question?"
 
 def construct_prompt(conversation_memory, user_message):
     return "\n".join([f"{msg['role']}: {msg['content']}" for msg in conversation_memory] + [f"user: {user_message}"]) + "\nassistant:"
@@ -118,7 +111,6 @@ def extract_response(generated_text):
     return generated_text.split("\nassistant:")[-1].strip()
 
 def filter_inappropriate_words(text):
-    # Simple list of words to filter out
     profane_words = ['ass', 'damn', 'hell']  # Expand this list as needed
     words = text.split()
     for i, word in enumerate(words):
