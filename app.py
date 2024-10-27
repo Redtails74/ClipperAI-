@@ -8,7 +8,7 @@ import os
 # Configuration class
 class Config:
     MAX_HISTORY = 5
-    MODEL_NAME = 'EleutherAI/gpt-neo-1.3B'
+    MODEL_NAME = 'EleutherAI/gpt-neo-125M'
     API_KEY = os.getenv('HUGGINGFACE_API_KEY', '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')
 
 # Setting up logger
