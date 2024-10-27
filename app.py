@@ -55,8 +55,7 @@ def chat():
     conversation_memory.append({"role": "user", "content": user_message})
 
     # Limit conversation history to the last N messages
-    MAX_HISTORY = Config.MAX_HISTORY
-    if len(conversation_memory) > MAX_HISTORY:
+    while len(conversation_memory) > Config.MAX_HISTORY:
         conversation_memory.pop(0)
 
     try:
@@ -69,13 +68,15 @@ def chat():
         # Generate response with optimized parameters
         response = generator(
             prompt,
-            max_length=200,  # Keep this reduced for faster responses
+            max_length=200,
             do_sample=True,
             num_return_sequences=1,
-            temperature=0.5,  # Focused response
-            top_k=30,         # Faster sampling
-            top_p=0.85,       # Limit token choices
-            repetition_penalty=1.5,  # Moderate repetition penalty
+            temperature=0.6,  # Slightly increased for some creativity
+            top_k=40,         # Increased for more sampling options
+            top_p=0.90,       # Slightly more diverse token choices
+            repetition_penalty=1.6,  # Increased to further discourage repetition
+            num_beams=5,      # Added for potentially better quality
+            early_stopping=True,
             truncation=True
         )
 
@@ -101,11 +102,13 @@ def chat():
 
 def construct_prompt(conversation_memory, user_message):
     """Construct a prompt based on conversation history."""
-    return " ".join([f"{msg['role']}: {msg['content']}" for msg in conversation_memory] + [f"user: {user_message}"])
+    # Joining messages with newlines for better context separation
+    return "\n".join([f"{msg['role']}: {msg['content']}" for msg in conversation_memory] + [f"user: {user_message}"]) + "\nassistant:"
 
 def extract_response(generated_text):
     """Extract the assistant's reply from the generated text."""
-    return generated_text  # Modify as necessary
+    # Assuming the response starts after the last \nassistant:
+    return generated_text.split("\nassistant:")[-1].strip()
 
 if __name__ == '__main__':
     app.run(host='0.0.0.0', port=5000, debug=True)
