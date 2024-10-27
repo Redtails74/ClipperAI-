@@ -62,7 +62,13 @@ def chat():
         most_common = Counter(user_history).most_common(1)
         
         if most_common[0][1] > 1:  # If a message is repeated more than once
-            response_text = handle_repetition(conversation_memory)
+            # Check for specific patterns in the message to provide more relevant responses
+            if re.search(r'\btry again\b', user_message):
+                response_text = "Let's try something new. What else can we talk about?"
+            elif re.search(r'\bdo better\b', user_message):
+                response_text = "I'm sorry for the repetition. How can I assist you better?"
+            else:
+                response_text = handle_repetition(conversation_memory)
         else:
             # Construct prompt with context
             prompt = construct_prompt(conversation_memory, user_message)
@@ -100,9 +106,9 @@ def chat():
 def handle_repetition(conversation_memory):
     user_last_message = conversation_memory[-1]['content']
     if re.search(r'\btry\b', user_last_message, re.IGNORECASE):
-        return "Are you finding what you're looking for? Maybe we can switch topics or try something new."
+        return "It looks like we're stuck. Shall we move on to a different topic?"
     else:
-        return "It seems we might be stuck in a loop. Can we explore something else or do you have a different question?"
+        return "It seems we might be repeating ourselves. Can you provide more details or ask a different question?"
 
 def construct_prompt(conversation_memory, user_message):
     return "\n".join([f"{msg['role']}: {msg['content']}" for msg in conversation_memory] + [f"user: {user_message}"]) + "\nassistant:"
