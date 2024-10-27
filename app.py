@@ -10,7 +10,7 @@ import re
 # Configuration class
 class Config:
     MAX_HISTORY = 5
-    MODEL_NAME = 'EleutherAI/gpt-neo-125M'
+    MODEL_NAME = 'google/gemma-7b-it'  # Changed to Google's Gemma model
     API_KEY = os.getenv('HUGGINGFACE_API_KEY', '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')
 
 # Setting up logger
@@ -30,7 +30,11 @@ model_name = Config.MODEL_NAME
 try:
     model = AutoModelForCausalLM.from_pretrained(model_name)
     tokenizer = AutoTokenizer.from_pretrained(model_name)
+    # Ensure you're using the correct pipeline for instruction tuning if necessary
     generator = pipeline('text-generation', model=model, tokenizer=tokenizer, device=device)
+    
+    # Note: Depending on the model's capabilities, you might need to adjust the pipeline parameters like 
+    # 'conversation' or 'text2text-generation' for instruction tuning models.
 except Exception as e:
     logger.error(f"Error loading model or tokenizer: {e}")
     raise
@@ -57,39 +61,23 @@ def chat():
         conversation_memory.pop(0)
 
     try:
-        # Detect repetition
-        user_history = [msg['content'].lower() for msg in conversation_memory if msg['role'] == 'user']
-        most_common = Counter(user_history).most_common(1)
-        
-        if most_common[0][1] > 1:  # If a message is repeated more than once
-            # Check for specific patterns in the message to provide more relevant responses
-            if re.search(r'\btry again\b', user_message):
-                response_text = "Let's try something new. What else can we talk about?"
-            elif re.search(r'\bdo better\b', user_message):
-                response_text = "I'm sorry for the repetition. How can I assist you better?"
-            else:
-                response_text = handle_repetition(conversation_memory)
-        else:
-            # Construct prompt with context
-            prompt = construct_prompt(conversation_memory, user_message)
+        # Construct prompt with context
+        prompt = construct_prompt(conversation_memory, user_message)
 
-            # Generate response with optimized parameters
-            response = generator(
-                prompt,
-                max_length=200,
-                do_sample=True,
-                num_return_sequences=1,
-                temperature=0.7,
-                top_k=50,
-                top_p=0.95,
-                repetition_penalty=1.2,
-                num_beams=3,
-                early_stopping=True,
-                truncation=True
-            )
+        # Generate response
+        response = generator(
+            prompt,
+            max_length=200,  # You might want to adjust this based on the model's capabilities
+            # Ensure these parameters are appropriate for the Gemma model. Gemma might not support all of these.
+            do_sample=True,
+            temperature=0.7,
+            top_k=50,
+            top_p=0.95,
+            repetition_penalty=1.2
+        )
 
-            generated_text = response[0].get('generated_text', '').strip()
-            response_text = extract_response(generated_text)
+        generated_text = response[0].get('generated_text', '').strip()
+        response_text = extract_response(generated_text)
 
         # Filter out inappropriate language
         response_text = filter_inappropriate_words(response_text)
@@ -103,26 +91,8 @@ def chat():
         logger.error(f"Error during chat processing: {e}")
         return jsonify({'error': 'Internal server error'}), 500
 
-def handle_repetition(conversation_memory):
-    user_last_message = conversation_memory[-1]['content']
-    if re.search(r'\btry\b', user_last_message, re.IGNORECASE):
-        return "It looks like we're stuck. Shall we move on to a different topic?"
-    else:
-        return "It seems we might be repeating ourselves. Can you provide more details or ask a different question?"
-
-def construct_prompt(conversation_memory, user_message):
-    return "\n".join([f"{msg['role']}: {msg['content']}" for msg in conversation_memory] + [f"user: {user_message}"]) + "\nassistant:"
-
-def extract_response(generated_text):
-    return generated_text.split("\nassistant:")[-1].strip()
-
-def filter_inappropriate_words(text):
-    profane_words = ['ass', 'damn', 'hell']  # Expand this list as needed
-    words = text.split()
-    for i, word in enumerate(words):
-        if word.lower() in profane_words:
-            words[i] = '*' * len(word)
-    return ' '.join(words)
+# The rest of your functions (handle_repetition, construct_prompt, extract_response, filter_inappropriate_words) 
+# can remain the same unless you need to adjust for any new model-specific requirements or prompt formats.
 
 if __name__ == '__main__':
     app.run(host='0.0.0.0', port=5000, debug=True)
