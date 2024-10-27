@@ -1,4 +1,4 @@
-from flask import Flask, request, jsonify, render_template, send_from_directory
+from flask import Flask, request, jsonify, render_template
 from flask_cors import CORS
 from transformers import pipeline, AutoTokenizer, AutoModelForCausalLM
 import logging
@@ -92,4 +92,18 @@ def chat():
         return jsonify({'response': response_text, 'conversation': conversation_memory})
 
     except Exception as e:
-        logger.error(f"
+        logger.error(f"Error during chat processing: {e}")
+        return jsonify({'error': 'Internal server error'}), 500
+
+def construct_prompt(conversation_memory, user_message):
+    # Your implementation for constructing the prompt
+    # This function should create a prompt based on the conversation history
+    return " ".join([f"{msg['role']}: {msg['content']}" for msg in conversation_memory] + [f"user: {user_message}"])
+
+def extract_response(generated_text):
+    # Your implementation for extracting the response from generated text
+    # This function should parse the generated text to get the assistant's reply
+    return generated_text  # Modify as necessary
+
+if __name__ == '__main__':
+    app.run(debug=True)
