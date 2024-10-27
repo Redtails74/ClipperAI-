@@ -41,8 +41,11 @@ def home():
 def chat():
     """Chat API endpoint with context retention and relevance enhancement."""
     user_message = request.json.get('message', '')
-    if not user_message:
-        return jsonify({'error': 'No input message provided.'}), 400
+    if not isinstance(user_message, str):
+        return jsonify({'error': 'Invalid input message'}), 400
+
+    if not user_message.strip():
+        return jsonify({'error': 'No input message provided'}), 400
 
     # Add user message to conversation memory
     conversation_memory.append({"role": "user", "content": user_message})
@@ -76,6 +79,9 @@ def chat():
         logger.info(f"Time taken for generation: {time.time() - start_time:.2f} seconds")
 
         generated_text = response[0].get('generated_text', '').strip()
+        if not generated_text:
+            return jsonify({'error': 'No response generated'}), 500
+
         logger.info(f"Generated Text: {generated_text}")
         response_text = extract_response(generated_text)
         logger.info(f"Extracted Response: {response_text}")
@@ -91,6 +97,9 @@ def chat():
 
 def construct_prompt(conversation, current_message):
     """Construct a prompt with conversation history."""
+    if not conversation:
+        return f"User: {current_message}\nAI:"
+
     prompt = "\n".join([f"{turn['role']}: {turn['content']}" for turn in conversation])
     prompt += f"\nUser: {current_message}\nAI:"
     return prompt
@@ -99,16 +108,7 @@ def extract_response(text):
     """Extract AI response from generated text."""
     if "AI:" in text:
         return text.split('AI:')[-1].strip()
-    return text
-
-# For template reloading
-@app.after_request
-def add_header(response):
-    response.headers['X-UA-Compatible'] = 'IE=Edge,chrome=1'
-    response.headers['Cache-Control'] = 'no-cache, no-store, must-revalidate'
-    response.headers['Pragma'] = 'no-cache'
-    response.headers['Expires'] = '0'
-    return response
+    return
 
 if __name__ == '__main__':
     app.run(debug=True, extra_files=['templates/'])  # Watch for changes in templates
