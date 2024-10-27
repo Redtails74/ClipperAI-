@@ -5,6 +5,12 @@ import logging
 import time
 import os
 
+# Configuration class
+class Config:
+    MAX_HISTORY = 5
+    MODEL_NAME = 'EleutherAI/gpt-neo-1.3B'
+    API_KEY = os.getenv('HUGGINGFACE_API_KEY', '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')
+
 # Setting up logger
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
@@ -15,12 +21,10 @@ app = Flask(__name__,
             template_folder='./templates')
 CORS(app, resources={r"/api/*": {"origins": "*"}})
 
-# Load environment variables
-API_KEY = os.getenv('HUGGINGFACE_API_KEY', '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')
-model_name = 'EleutherAI/gpt-neo-1.3B'
-device = -1  # Use CPU; set to 0 for GPU if available
-
 # Load model and tokenizer
+device = -1  # Use CPU; set to 0 for GPU if available
+model_name = Config.MODEL_NAME
+
 try:
     model = AutoModelForCausalLM.from_pretrained(model_name)
     tokenizer = AutoTokenizer.from_pretrained(model_name)
@@ -51,7 +55,7 @@ def chat():
     conversation_memory.append({"role": "user", "content": user_message})
 
     # Limit conversation history to the last N messages
-    MAX_HISTORY = 5  # Adjust this value as needed
+    MAX_HISTORY = Config.MAX_HISTORY
     if len(conversation_memory) > MAX_HISTORY:
         conversation_memory.pop(0)
 
@@ -96,13 +100,11 @@ def chat():
         return jsonify({'error': 'Internal server error'}), 500
 
 def construct_prompt(conversation_memory, user_message):
-    # Your implementation for constructing the prompt
-    # This function should create a prompt based on the conversation history
+    """Construct a prompt based on conversation history."""
     return " ".join([f"{msg['role']}: {msg['content']}" for msg in conversation_memory] + [f"user: {user_message}"])
 
 def extract_response(generated_text):
-    # Your implementation for extracting the response from generated text
-    # This function should parse the generated text to get the assistant's reply
+    """Extract the assistant's reply from the generated text."""
     return generated_text  # Modify as necessary
 
 if __name__ == '__main__':
