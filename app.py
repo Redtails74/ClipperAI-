@@ -10,8 +10,9 @@ import re
 # Configuration class
 class Config:
     MAX_HISTORY = 5
-    MODEL_NAME = 'google/gemma-7b-it'  # Changed to Google's Gemma model
-    API_KEY = os.getenv('HUGGINGFACE_API_KEY', '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')
+    # Using EleutherAI's GPT-Neo 125M for lower memory consumption
+    MODEL_NAME = 'EleutherAI/gpt-neo-125M'
+    API_KEY = os.getenv('HUGGINGFACE_API_KEY', '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')  # This might not be necessary for public models
 
 # Setting up logger
 logging.basicConfig(level=logging.INFO)
@@ -24,22 +25,20 @@ app = Flask(__name__,
 CORS(app, resources={r"/api/*": {"origins": "*"}})
 
 # Load model and tokenizer
-device = -1  # Use CPU; set to 0 for GPU if available
+device = -1  # Use CPU
 model_name = Config.MODEL_NAME
 
 try:
+    # Load the model. Note: EleutherAI models might not require .from_pretrained to specify model type directly
     model = AutoModelForCausalLM.from_pretrained(model_name)
     tokenizer = AutoTokenizer.from_pretrained(model_name)
-    # Ensure you're using the correct pipeline for instruction tuning if necessary
     generator = pipeline('text-generation', model=model, tokenizer=tokenizer, device=device)
     
-    # Note: Depending on the model's capabilities, you might need to adjust the pipeline parameters like 
-    # 'conversation' or 'text2text-generation' for instruction tuning models.
 except Exception as e:
     logger.error(f"Error loading model or tokenizer: {e}")
     raise
 
-# Simple conversation memory
+# Conversation memory
 conversation_memory = []
 
 @app.route('/')
@@ -61,25 +60,25 @@ def chat():
         conversation_memory.pop(0)
 
     try:
-        # Construct prompt with context
-        prompt = construct_prompt(conversation_memory, user_message)
+        # Construct prompt from conversation memory
+        prompt = "\n".join([f"{entry['role']}: {entry['content']}" for entry in conversation_memory]) + "\nassistant:"
 
         # Generate response
         response = generator(
             prompt,
-            max_length=200,  # You might want to adjust this based on the model's capabilities
-            # Ensure these parameters are appropriate for the Gemma model. Gemma might not support all of these.
+            max_length=150,  # Shorter than before to match the capabilities of a smaller model
             do_sample=True,
-            temperature=0.7,
+            temperature=0.8,  # Adjusted for creativity vs consistency
             top_k=50,
             top_p=0.95,
-            repetition_penalty=1.2
+            repetition_penalty=1.1  # Reduced penalty as GPT-Neo might not need as much
         )
 
-        generated_text = response[0].get('generated_text', '').strip()
-        response_text = extract_response(generated_text)
+        # Extract the generated text and clean it up
+        generated_text = response[0]['generated_text']
+        response_text = generated_text.split('assistant:')[-1].strip()
 
-        # Filter out inappropriate language
+        # Filter out inappropriate language (You'll need to implement or import this function)
         response_text = filter_inappropriate_words(response_text)
 
         # Add AI's response to conversation memory
@@ -91,8 +90,23 @@ def chat():
         logger.error(f"Error during chat processing: {e}")
         return jsonify({'error': 'Internal server error'}), 500
 
-# The rest of your functions (handle_repetition, construct_prompt, extract_response, filter_inappropriate_words) 
-# can remain the same unless you need to adjust for any new model-specific requirements or prompt formats.
+# Implement these functions if they are not already in your code or need adjustments:
+
+def construct_prompt(conversation, message):
+    # Assuming the prompt construction is simple. Adjust if needed for context.
+    return "\n".join([f"{entry['role']}: {entry['content']}" for entry in conversation]) + f"\nuser: {message}"
+
+def extract_response(text):
+    # Simple function to extract the response from the generated text
+    return text.split('assistant:')[-1].strip()
+
+def filter_inappropriate_words(text):
+    # Implement or adjust this function to filter out inappropriate language
+    # Example implementation:
+    bad_words = ["badword1", "badword2"]  # Replace with actual bad words list
+    for word in bad_words:
+        text = text.replace(word, '*' * len(word))
+    return text
 
 if __name__ == '__main__':
     app.run(host='0.0.0.0', port=5000, debug=True)
