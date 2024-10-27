@@ -92,4 +92,9 @@ def chat():
         return jsonify({'response': response_text, 'conversation': conversation_memory})
 
     except Exception as e:
+        logger.error(f"Error
+
+        return jsonify({'response': response_text, 'conversation': conversation_memory})
+
+    except Exception as e:
         logger.error(f
