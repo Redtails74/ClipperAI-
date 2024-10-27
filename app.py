@@ -5,6 +5,7 @@ import logging
 import time
 import os
 from collections import Counter
+import re
 
 # Configuration class
 class Config:
@@ -44,7 +45,6 @@ def home():
 
 @app.route('/api/chat', methods=['POST'])
 def chat():
-    """Chat API endpoint with context retention and relevance enhancement."""
     user_message = request.json.get('message', '').strip().lower()
     if not user_message:
         return jsonify({'error': 'No input message provided'}), 400
@@ -61,16 +61,14 @@ def chat():
         user_history = [msg['content'].lower() for msg in conversation_memory if msg['role'] == 'user']
         most_common = Counter(user_history).most_common(1)
         
-        # Check if the user is repeating
-        if most_common[0][1] > 1:  # If a message is repeated
-            if most_common[0][0] in ["hmm...how do you know", "trying again"]:
+        if most_common[0][1] > 1:  # If a message is repeated more than once
+            if re.search(r'\bwhat|where|when|why|how\b', user_message):
+                return jsonify({'response': handle_question_repetition(conversation_memory), 'conversation': conversation_memory})
+            else:
                 return jsonify({'response': handle_repetition(conversation_memory), 'conversation': conversation_memory})
 
         # Construct prompt with context
         prompt = construct_prompt(conversation_memory, user_message)
-
-        # Start timing the response generation
-        start_time = time.time()
 
         # Generate response with optimized parameters
         response = generator(
@@ -90,6 +88,9 @@ def chat():
         generated_text = response[0].get('generated_text', '').strip()
         response_text = extract_response(generated_text)
 
+        # Filter out inappropriate language
+        response_text = filter_inappropriate_words(response_text)
+
         # Add AI's response to conversation memory
         conversation_memory.append({"role": "assistant", "content": response_text})
 
@@ -100,22 +101,30 @@ def chat():
         return jsonify({'error': 'Internal server error'}), 500
 
 def handle_repetition(conversation_memory):
-    """Handle repetitive inputs by providing varied or more interactive responses."""
     user_last_message = conversation_memory[-1]['content'].lower()
-    if "how do you know" in user_last_message:
-        return "I can look up information from various sources or use patterns from past conversations. What's the context you're referring to?"
-    elif "trying again" in user_last_message:
-        return "Sometimes it's good to try again. What are you attempting to achieve?"
+    if "better" in user_last_message:
+        return "I'm here to help. Is there something specific you'd like to improve or discuss?"
     else:
-        return "It seems we're looping. Can you elaborate on your question or try something new?"
+        return "It seems we're repeating ourselves. Can you ask something new or clarify your last question?"
+
+def handle_question_repetition(conversation_memory):
+    # This could be expanded with more specific logic for different types of questions
+    return "I see you're asking about that again. Here's some more information or perhaps a different perspective:"
 
 def construct_prompt(conversation_memory, user_message):
-    """Construct a prompt based on conversation history."""
     return "\n".join([f"{msg['role']}: {msg['content']}" for msg in conversation_memory] + [f"user: {user_message}"]) + "\nassistant:"
 
 def extract_response(generated_text):
-    """Extract the assistant's reply from the generated text."""
     return generated_text.split("\nassistant:")[-1].strip()
+
+def filter_inappropriate_words(text):
+    # Simple list of words to filter out
+    profane_words = ['ass', 'damn', 'hell']  # Expand this list as needed
+    words = text.split()
+    for i, word in enumerate(words):
+        if word.lower() in profane_words:
+            words[i] = '*' * len(word)
+    return ' '.join(words)
 
 if __name__ == '__main__':
     app.run(host='0.0.0.0', port=5000, debug=True)
