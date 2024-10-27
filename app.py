@@ -68,14 +68,14 @@ def chat():
         # Generate response with optimized parameters
         response = generator(
             prompt,
-            max_length=200,
-            do_sample=True,
+            max_length=200,  # Adjusted based on typical response length
+            do_sample=True,  # Use sampling for more diverse outputs
             num_return_sequences=1,
-            temperature=0.6,  # Slightly increased for some creativity
-            top_k=40,         # Increased for more sampling options
-            top_p=0.90,       # Slightly more diverse token choices
-            repetition_penalty=1.6,  # Increased to further discourage repetition
-            num_beams=5,      # Added for potentially better quality
+            temperature=0.7,  # Temperature between 0.6 and 0.8 for balance
+            top_k=50,        # Increased for more diversity in token selection
+            top_p=0.95,      # Increased for more creative output
+            repetition_penalty=1.2,  # Adjusted for less repetition
+            num_beams=3,     # Reduced to keep generation efficient
             early_stopping=True,
             truncation=True
         )
