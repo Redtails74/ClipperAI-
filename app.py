@@ -61,7 +61,7 @@ def chat():
 
         # Start timing the response generation
         start_time = time.time()
-        
+
         # Generate response with optimized parameters
         response = generator(
             prompt,
@@ -92,23 +92,4 @@ def chat():
         return jsonify({'response': response_text, 'conversation': conversation_memory})
 
     except Exception as e:
-        logger.error(f"Error processing response: {e}")
-        return jsonify({'error': str(e)}), 500
-
-def construct_prompt(conversation, current_message):
-    """Construct a prompt with conversation history."""
-    if not conversation:
-        return f"User: {current_message}\nAI:"
-
-    prompt = "\n".join([f"{turn['role']}: {turn['content']}" for turn in conversation])
-    prompt += f"\nUser: {current_message}\nAI:"
-    return prompt
-
-def extract_response(text):
-    """Extract AI response from generated text."""
-    if "AI:" in text:
-        return text.split('AI:')[-1].strip()
-    return
-
-if __name__ == '__main__':
-    app.run(debug=True, extra_files=['templates/'])  # Watch for changes in templates
+        logger.error(f
