@@ -11,7 +11,7 @@
         }
 
         body {
-            font-family: Arial, sans-serif;
+            font-family: 'Arial', sans-serif;
             margin: 0;
             padding: 0;
             background-color: #f9f9f9;
@@ -45,6 +45,7 @@
             border-radius: 4px;
             border: 1px solid #ccc;
             font-size: 16px;
+            resize: none;
         }
 
         /* Chat area styles */
@@ -59,6 +60,17 @@
             border-radius: 4px;
         }
 
+        /* Message styles */
+        .user-message {
+            text-align: right;
+            color: #007bff;
+        }
+
+        .ai-message {
+            text-align: left;
+            color: #28a745;
+        }
+
         /* Button styles */
         button {
             padding: 10px 20px;
@@ -67,11 +79,12 @@
             border: none;
             border-radius: 4px;
             cursor: pointer;
-            transition: background-color 0.3s;
+            transition: background-color 0.3s, transform 0.2s;
         }
 
         button:hover {
             background-color: #0056b3;
+            transform: scale(1.05);
         }
 
         /* Loading styles */
@@ -98,8 +111,8 @@
             const message = input.value.trim();
             if (!message) return;
 
-            updateChat('User', message);
-            updateChat('AI', 'Loading...', true); // Show loading message
+            updateChat('User', message, 'user-message');
+            updateChat('AI', 'Loading...', 'loading'); // Show loading message
 
             try {
                 const response = await fetch('/api/chat', {
@@ -112,24 +125,20 @@
 
                 if (response.ok) {
                     const data = await response.json();
-                    updateChat('AI', data.response);
+                    updateChat('AI', data.response, 'ai-message');
                 } else {
-                    updateChat('Error', response.statusText);
+                    updateChat('Error', response.statusText, 'ai-message');
                 }
             } catch (error) {
-                updateChat('Error', error.message);
+                updateChat('Error', error.message, 'ai-message');
             }
 
             input.value = '';
         }
 
-        function updateChat(speaker, message, isLoading = false) {
-            chatDiv.innerHTML += `<div><strong>${speaker}:</strong> ${message}</div>`;
+        function updateChat(speaker, message, className) {
+            chatDiv.innerHTML += `<div class="${className}"><strong>${speaker}:</strong> ${message}</div>`;
             chatDiv.scrollTop = chatDiv.scrollHeight;
-
-            if (isLoading) {
-                setTimeout(() => chatDiv.lastChild.remove(), 1000);
-            }
         }
 
         sendButton.addEventListener('click', sendMessage);
