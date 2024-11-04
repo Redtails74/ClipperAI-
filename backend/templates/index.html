@@ -96,7 +96,7 @@
 </head>
 <body>
     <div id="app">
-        <img src="{{ url_for('static', filename='Code Clipper Logo-01.jpg') }}" alt="Clipper Logo" />
+        <img src="{{ url_for('static', filename='Code Clipper Logo-01.jpg', _external=True) }}" alt="Clipper Logo" />
         <textarea id="input" placeholder="Type your message..."></textarea>
         <button id="send">Send</button>
         <div id="chat"></div>
