@@ -20,8 +20,8 @@ logger = logging.getLogger(__name__)
 
 app = Flask(__name__, 
             static_url_path='/static', 
-            static_folder='backend/static', 
-            template_folder='backend/templates')
+            static_folder='./static', 
+            template_folder='./templates')
 CORS(app, resources={r"/api/*": {"origins": "*"}})
 
 # Load model and tokenizer
