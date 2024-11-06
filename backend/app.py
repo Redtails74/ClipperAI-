@@ -54,6 +54,9 @@ def chat():
 
         logger.info(f"Generated prompt for model: {prompt}")
 
+        # Tokenize input with truncation to avoid long prompts
+        inputs = tokenizer(prompt, return_tensors='pt', truncation=True, max_length=1024, padding=True)
+
         # Generate response
         response = generator(
             prompt,
