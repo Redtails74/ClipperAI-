@@ -5,6 +5,7 @@ import logging
 import os
 from collections import deque
 import re
+import torch
 
 # Configuration
 class Config:
@@ -19,7 +20,7 @@ logger = logging.getLogger(__name__)
 app = Flask(__name__,
             static_url_path='/static',
             static_folder='../static',
-            template_folder='templates')
+            template_folder='./templates')
 CORS(app, resources={r"/api/*": {"origins": "*"}})
 
 # Load model and tokenizer
@@ -28,6 +29,10 @@ try:
     tokenizer = AutoTokenizer.from_pretrained(Config.MODEL_NAME, use_auth_token=Config.API_KEY)
     # Set pad_token to eos_token (common workaround for models without a pad_token)
     tokenizer.pad_token = tokenizer.eos_token
+    
+    model.eval()  # Set the model to evaluation mode to disable dropout for inference
+    if torch.cuda.is_available():
+        model = model.cuda()
     
     generator = pipeline('text-generation', model=model, tokenizer=tokenizer, device=0 if os.environ.get('CUDA_VISIBLE_DEVICES') else -1)
 except Exception as e:
@@ -62,32 +67,30 @@ def chat():
             return jsonify({'error': 'Prompt is empty'}), 500
 
         # Tokenize input with truncation to avoid long prompts
-        inputs = tokenizer.encode(prompt, return_tensors='pt', truncation=True, max_length=1024, padding=True)
+        inputs = tokenizer.encode(prompt, return_tensors='pt', truncation=True, max_length=1024)
+        if torch.cuda.is_available():
+            inputs = inputs.cuda()
 
         # Generate response
-        response = generator(
-            inputs,
-            max_length=150,  # Adjust length to allow for more diverse responses
-            do_sample=True,
-            temperature=0.7,  # Moderate temperature for better variety in answers
-            top_k=50,  # Experiment with smaller values of top_k
-            top_p=0.9,  # Use higher value for more randomness
-            num_return_sequences=1,
-            no_repeat_ngram_size=3,
-            repetition_penalty=1.2  # Less penalty to allow for some repetition
-        )
+        with torch.no_grad():  # Disable gradient calculation for speed
+            outputs = model.generate(
+                inputs,
+                max_length=150,
+                do_sample=True,
+                temperature=0.7,
+                top_k=50,
+                top_p=0.9,
+                num_return_sequences=1,
+                no_repeat_ngram_size=3,
+                repetition_penalty=1.2
+            )
 
-        # Check if response is empty or invalid
-        if not response or 'generated_text' not in response[0]:
-            logger.error("Error: Model did not return a valid response.")
-            return jsonify({'error': 'Model did not return a valid response'}), 500
-        
-        # Extract the generated text
-        generated_text = response[0]['generated_text']
-        logger.info(f"Model generated text: {generated_text}")
-        
+        # Decode the model's output
+        response_text = tokenizer.decode(outputs[0], skip_special_tokens=True)
+        response_text = str(response_text)  # Ensure response is a string
+
         # Clean and extract the AI response from the generated text
-        response_text = generated_text.split('assistant:')[-1].strip() if 'assistant:' in generated_text else generated_text.split('\n')[-1].strip()
+        response_text = response_text.split('assistant:')[-1].strip() if 'assistant:' in response_text else response_text.split('\n')[-1].strip()
 
         # Filter out inappropriate language
         response_text = filter_inappropriate_words(response_text)
