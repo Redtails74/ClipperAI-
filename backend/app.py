@@ -47,10 +47,12 @@ def chat():
 
     # Add user message to conversation history
     conversation_memory.append(f"user: {user_message}")
-
+    
     try:
-        # Construct prompt from conversation history
+        # Construct prompt from conversation history (use only the last few exchanges)
         prompt = "\n".join(conversation_memory)
+
+        logger.info(f"Generated prompt for model: {prompt}")
 
         # Generate response
         response = generator(
@@ -66,8 +68,15 @@ def chat():
             repetition_penalty=1.3
         )
 
+        # Check if response is empty or invalid
+        if not response or 'generated_text' not in response[0]:
+            logger.error("Error: Model did not return a valid response.")
+            return jsonify({'error': 'Model did not return a valid response'}), 500
+        
         # Extract the generated text
         generated_text = response[0]['generated_text']
+        logger.info(f"Model generated text: {generated_text}")
+        
         response_text = generated_text.split('assistant:')[-1].strip() if 'assistant:' in generated_text else generated_text.split('\n')[-1].strip()
 
         # Filter out inappropriate language
