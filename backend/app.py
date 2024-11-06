@@ -60,28 +60,28 @@ def chat():
         conversation_memory.pop(0)
 
     try:
-    # Construct prompt from conversation memory
-    prompt = "\n".join([f"{entry['role']}: {entry['content']}" for entry in conversation_memory]) + "\nassistant:"
+        # Construct prompt from conversation memory
+        prompt = "\n".join([f"{entry['role']}: {entry['content']}" for entry in conversation_memory]) + "\nassistant:"
 
-    # Generate response
-    response = generator(
-        prompt,
-        max_length=200,  # Increase length to allow for more detailed responses
-        do_sample=True,
-        temperature=0.7,  # Lower temperature for more focused responses but still allowing for some creativity
-        top_k=40,  # Narrow down the token selection to make the output more consistent with the context
-        top_p=0.90,  # Slightly lower for more focused output
-        repetition_penalty=1.2,  # Increase slightly to reduce repetition
-        num_return_sequences=1,  # Generate one response
-        # Add these for more control:
-        num_beams=4,  # Use beam search for better quality
-        early_stopping=True,  # Stop beam search when at least num_beams complete sequences are found
-        no_repeat_ngram_size=2  # Prevent repetitions of 2-gram sequences
-    )
+        # Generate response
+        response = generator(
+            prompt,
+            max_length=200,  # Increase length to allow for more detailed responses
+            do_sample=True,
+            temperature=0.7,  # Lower temperature for more focused responses but still allowing for some creativity
+            top_k=40,  # Narrow down the token selection to make the output more consistent with the context
+            top_p=0.90,  # Slightly lower for more focused output
+            repetition_penalty=1.2,  # Increase slightly to reduce repetition
+            num_return_sequences=1,  # Generate one response
+            # Add these for more control:
+            num_beams=4,  # Use beam search for better quality
+            early_stopping=True,  # Stop beam search when at least num_beams complete sequences are found
+            no_repeat_ngram_size=2  # Prevent repetitions of 2-gram sequences
+        )
 
-    # Extract the generated text and clean it up
-    generated_text = response[0]['generated_text']
-    response_text = generated_text.split('assistant:')[-1].strip()
+        # Extract the generated text and clean it up
+        generated_text = response[0]['generated_text']
+        response_text = generated_text.split('assistant:')[-1].strip()
 
         # Filter out inappropriate language (You'll need to implement or import this function)
         response_text = filter_inappropriate_words(response_text)
