@@ -8,7 +8,7 @@ import re
 
 # Configuration
 class Config:
-    MAX_HISTORY = 5  # Keep only the last few exchanges to avoid excessive context
+    MAX_HISTORY = 5  # Limit conversation history to a few exchanges
     MODEL_NAME = 'microsoft/DialoGPT-medium'  # Better suited for conversational AI
     API_KEY = os.getenv('HUGGINGFACE_API_KEY', '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')  # Hugging Face token
 
@@ -53,8 +53,11 @@ def chat():
     conversation_memory.append(f"user: {user_message}")
     
     try:
-        # Construct prompt from conversation history (use only the last few exchanges)
-        prompt = "\n".join(conversation_memory)
+        # Construct prompt from conversation history (without the latest user input)
+        # Only include the previous assistant's response and the previous user message.
+        # This prevents repeating the user message in the prompt.
+
+        prompt = "\n".join([entry for entry in conversation_memory if not entry.startswith("user:")])
 
         logger.info(f"Generated prompt for model: {prompt}")
 
@@ -64,15 +67,15 @@ def chat():
         # Generate response
         response = generator(
             prompt,
-            max_length=150,
+            max_length=150,  # Adjust length to allow for more diverse responses
             do_sample=True,
-            temperature=0.6,  # Lower temperature to reduce repetitiveness
-            top_k=40,  # Experiment with smaller values of top_k
-            top_p=0.95,  # Increase top_p for diversity
+            temperature=0.7,  # Moderate temperature for better variety in answers
+            top_k=50,  # Experiment with smaller values of top_k
+            top_p=0.9,  # Use higher value for more randomness
             num_return_sequences=1,
             pad_token_id=tokenizer.eos_token_id,
             no_repeat_ngram_size=3,
-            repetition_penalty=1.3
+            repetition_penalty=1.2  # Less penalty to allow for some repetition
         )
 
         # Check if response is empty or invalid
@@ -84,6 +87,7 @@ def chat():
         generated_text = response[0]['generated_text']
         logger.info(f"Model generated text: {generated_text}")
         
+        # Clean and extract the AI response from the generated text
         response_text = generated_text.split('assistant:')[-1].strip() if 'assistant:' in generated_text else generated_text.split('\n')[-1].strip()
 
         # Filter out inappropriate language
