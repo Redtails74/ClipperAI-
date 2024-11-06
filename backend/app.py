@@ -10,7 +10,7 @@ import torch
 # Configuration
 class Config:
     MAX_HISTORY = 10
-    MODEL_NAME = 'microsoft/DialoGPT-medium'
+    MODEL_NAME = 'microsoft/DialoGPT-large'
     API_KEY = os.getenv('HUGGINGFACE_API_KEY', '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')
 
 # Setting up logger
