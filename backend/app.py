@@ -53,10 +53,8 @@ def chat():
     conversation_memory.append(f"user: {user_message}")
     
     try:
-        # Construct prompt from conversation history (without the latest user input)
-        # Only include the previous assistant's response and the previous user message.
-        # This prevents repeating the user message in the prompt.
-
+        # Construct prompt from conversation history
+        # Only include the previous assistant's response and the previous user message (don't repeat the user's input)
         prompt = "\n".join([entry for entry in conversation_memory if not entry.startswith("user:")])
 
         logger.info(f"Generated prompt for model: {prompt}")
