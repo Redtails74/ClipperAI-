@@ -113,4 +113,21 @@ def chat():
         response_text = filter_inappropriate_words(response_text)
         conversation_memory.append(f"assistant: {response_text}")
 
-        return jsonify({'response': response_text,
+        return jsonify({'response': response_text, 'conversation': list(conversation_memory)})
+
+    except Exception as e:
+        logger.error(f"Error during chat processing: {e}")
+        return jsonify({'error': 'Internal server error'}), 500
+
+def filter_inappropriate_words(text):
+    # This is a placeholder for the actual filtering logic
+    # You might want to use a library or a predefined list of words for this purpose
+    # Here's a simple example of how it might work:
+    bad_words = ["badword1", "badword2"]
+    for word in bad_words:
+        text = re.sub(r'\b' + re.escape(word) + r'\b', lambda m: '*' * len(m.group()), text, flags=re.IGNORECASE)
+    return text
+
+if __name__ == '__main__':
+    port = int(os.environ.get('PORT', 5000))
+    app.run(debug=True, port=port)
