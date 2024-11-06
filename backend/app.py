@@ -9,9 +9,9 @@ import torch
 
 # Configuration
 class Config:
-    MAX_HISTORY = 10  # Increased to keep more context
-    MODEL_NAME = 'microsoft/DialoGPT-medium'  # Better suited for conversational AI
-    API_KEY = os.getenv('HUGGINGFACE_API_KEY', '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')  # Hugging Face token
+    MAX_HISTORY = 10
+    MODEL_NAME = 'microsoft/DialoGPT-medium'
+    API_KEY = os.getenv('HUGGINGFACE_API_KEY', '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')
 
 # Setting up logger
 logging.basicConfig(level=logging.INFO)
@@ -27,10 +27,11 @@ CORS(app, resources={r"/api/*": {"origins": "*"}})
 try:
     model = AutoModelForCausalLM.from_pretrained(Config.MODEL_NAME, use_auth_token=Config.API_KEY)
     tokenizer = AutoTokenizer.from_pretrained(Config.MODEL_NAME, use_auth_token=Config.API_KEY)
-    # Set pad_token to eos_token (common workaround for models without a pad_token)
-    tokenizer.pad_token = tokenizer.eos_token
     
-    model.eval()  # Set the model to evaluation mode to disable dropout for inference
+    if tokenizer.pad_token is None:
+        tokenizer.pad_token = tokenizer.eos_token
+    
+    model.eval()  
     if torch.cuda.is_available():
         model = model.cuda()
     
@@ -47,6 +48,11 @@ def home():
     """Serve the homepage."""
     return render_template('index.html')
 
+def is_repeating(generated_text, user_message):
+    last_user_input = "user: " + user_message
+    generated_response = generated_text.split('\n')[-1].strip()
+    return last_user_input.lower() in generated_response.lower()
+
 @app.route('/api/chat', methods=['POST'])
 def chat():
     user_message = request.json.get('message', '').strip()
@@ -57,45 +63,37 @@ def chat():
     conversation_memory.append(f"user: {user_message}")
     
     try:
-        # Generate prompt from the conversation history
-        prompt = "\n".join(conversation_memory)
+        prompt = "Assistant: Here's my response:\n" + "\n".join([entry for entry in conversation_memory if entry.startswith("user:")])
         logger.info(f"Generated prompt for model: {prompt}")
         
-        # Check if prompt is empty
         if not prompt:
             logger.error("Error: Prompt is empty!")
             return jsonify({'error': 'Prompt is empty'}), 500
 
-        # Tokenize input with truncation to avoid long prompts
-        inputs = tokenizer.encode(prompt, return_tensors='pt', truncation=True, max_length=1024)
+        inputs = tokenizer(prompt, return_tensors='pt', truncation=True, max_length=1024, padding=True)
         if torch.cuda.is_available():
-            inputs = inputs.cuda()
-
-        # Generate response
-        with torch.no_grad():  # Disable gradient calculation for speed
+            inputs = {key: value.cuda() for key, value in inputs.items()}
+        
+        with torch.no_grad():
             outputs = model.generate(
-                inputs,
+                **inputs,
                 max_length=150,
                 do_sample=True,
-                temperature=0.7,
+                temperature=0.8,  # Increased for more randomness
                 top_k=50,
-                top_p=0.9,
+                top_p=0.95,  # Increased slightly for more randomness
                 num_return_sequences=1,
                 no_repeat_ngram_size=3,
-                repetition_penalty=1.2
+                repetition_penalty=1.1  # Lowered slightly to allow more repetition if contextually relevant
             )
 
-        # Decode the model's output
         response_text = tokenizer.decode(outputs[0], skip_special_tokens=True)
-        response_text = str(response_text)  # Ensure response is a string
+        if is_repeating(response_text, user_message):
+            response_text = "I'm sorry, there seems to be an issue with my response. Could you please rephrase your question?"
+        else:
+            response_text = response_text.split('Assistant:')[-1].strip() if 'Assistant:' in response_text else response_text.split('\n')[-1].strip()
 
-        # Clean and extract the AI response from the generated text
-        response_text = response_text.split('assistant:')[-1].strip() if 'assistant:' in response_text else response_text.split('\n')[-1].strip()
-
-        # Filter out inappropriate language
         response_text = filter_inappropriate_words(response_text)
-
-        # Add AI's response to conversation history
         conversation_memory.append(f"assistant: {response_text}")
 
         return jsonify({'response': response_text, 'conversation': list(conversation_memory)})
@@ -105,8 +103,7 @@ def chat():
         return jsonify({'error': 'Internal server error'}), 500
 
 def filter_inappropriate_words(text):
-    """Filters out inappropriate language from the response."""
-    bad_words = ["badword1", "badword2"]  # Replace with actual bad words list
+    bad_words = ["badword1", "badword2"]
     pattern = r'\b(?:' + '|'.join(map(re.escape, bad_words)) + r')\b'
     return re.sub(pattern, '*' * 8, text, flags=re.IGNORECASE)
 
