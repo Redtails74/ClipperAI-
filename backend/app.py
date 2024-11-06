@@ -64,6 +64,9 @@ def chat():
         # Tokenize input with truncation to avoid long prompts
         inputs = tokenizer(prompt, return_tensors='pt', truncation=True, max_length=1024, padding=True)
 
+        # Manually set the attention mask (required because pad_token == eos_token)
+        inputs['attention_mask'] = inputs['attention_mask'].fill_(1)
+
         # Generate response
         response = generator(
             prompt,
