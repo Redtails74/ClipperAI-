@@ -6,6 +6,7 @@ import os
 from collections import deque
 import re
 import torch
+from functools import lru_cache
 
 # Configuration
 class Config:
@@ -14,7 +15,7 @@ class Config:
     API_KEY = os.getenv('HUGGINGFACE_API_KEY', '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')
 
 # Setting up logger
-logging.basicConfig(level=logging.INFO)
+logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
 logger = logging.getLogger(__name__)
 
 app = Flask(__name__,
@@ -24,21 +25,26 @@ app = Flask(__name__,
 CORS(app, resources={r"/api/*": {"origins": "*"}})
 
 # Load model and tokenizer
-try:
-    model = AutoModelForCausalLM.from_pretrained(Config.MODEL_NAME, use_auth_token=Config.API_KEY)
-    tokenizer = AutoTokenizer.from_pretrained(Config.MODEL_NAME, use_auth_token=Config.API_KEY)
-    
-    if tokenizer.pad_token is None:
-        tokenizer.pad_token = tokenizer.eos_token
-    
-    model.eval()  
-    if torch.cuda.is_available():
-        model = model.cuda()
-    
-    generator = pipeline('text-generation', model=model, tokenizer=tokenizer, device=0 if os.environ.get('CUDA_VISIBLE_DEVICES') else -1)
-except Exception as e:
-    logger.error(f"Error loading model or tokenizer: {e}")
-    raise
+@lru_cache(maxsize=None)
+def load_model_and_tokenizer():
+    try:
+        model = AutoModelForCausalLM.from_pretrained(Config.MODEL_NAME, use_auth_token=Config.API_KEY)
+        tokenizer = AutoTokenizer.from_pretrained(Config.MODEL_NAME, use_auth_token=Config.API_KEY)
+        
+        if tokenizer.pad_token is None:
+            tokenizer.pad_token = tokenizer.eos_token
+        
+        if torch.cuda.is_available():
+            model = model.cuda()
+        
+        model.eval()
+        return model, tokenizer
+    except Exception as e:
+        logger.error(f"Error loading model or tokenizer: {e}")
+        raise
+
+model, tokenizer = load_model_and_tokenizer()
+generator = pipeline('text-generation', model=model, tokenizer=tokenizer, device=0 if os.environ.get('CUDA_VISIBLE_DEVICES') else -1)
 
 # Use deque for efficient memory management of conversation history
 conversation_memory = deque(maxlen=Config.MAX_HISTORY)
@@ -79,28 +85,27 @@ def chat():
                 **inputs,
                 max_length=150,
                 do_sample=True,
-                temperature=1.2,  # Increased for more randomness
+                temperature=1.2,
                 top_k=50,
-                top_p=0.95,  # Increased slightly for more randomness
+                top_p=0.95,
                 num_return_sequences=1,
                 no_repeat_ngram_size=3,
-                repetition_penalty=0.9  # Decreased to allow more repetition
+                repetition_penalty=0.9
             )
 
         response_text = tokenizer.decode(outputs[0], skip_special_tokens=True)
         if is_repeating(response_text, user_message):
-            # Try to generate a new response
             for _ in range(5):
                 outputs = model.generate(
                     **inputs,
                     max_length=150,
                     do_sample=True,
-                    temperature=1.2,  # Increased for more randomness
+                    temperature=1.2,
                     top_k=50,
-                    top_p=0.95,  # Increased slightly for more randomness
+                    top_p=0.95,
                     num_return_sequences=1,
                     no_repeat_ngram_size=3,
-                    repetition_penalty=0.9  # Decreased to allow more repetition
+                    repetition_penalty=0.9
                 )
                 response_text = tokenizer.decode(outputs[0], skip_special_tokens=True)
                 if not is_repeating(response_text, user_message):
@@ -121,8 +126,6 @@ def chat():
 
 def filter_inappropriate_words(text):
     # This is a placeholder for the actual filtering logic
-    # You might want to use a library or a predefined list of words for this purpose
-    # Here's a simple example of how it might work:
     bad_words = ["badword1", "badword2"]
     for word in bad_words:
         text = re.sub(r'\b' + re.escape(word) + r'\b', lambda m: '*' * len(m.group()), text, flags=re.IGNORECASE)
@@ -130,4 +133,4 @@ def filter_inappropriate_words(text):
 
 if __name__ == '__main__':
     port = int(os.environ.get('PORT', 5000))
-    app.run(debug=True, port=port)
+    app.run(debug=False, port=port, host='0.0.0.0')  # Debug set to False for production
