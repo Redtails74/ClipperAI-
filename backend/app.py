@@ -8,7 +8,7 @@ import os
 class Config:
     MAX_HISTORY = 10
     MODEL_NAME = 'microsoft/DialoGPT-medium'
-     API_KEY = os.getenv('HUGGINGFACE_API_KEY', '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')  
+    API_KEY = os.getenv('HUGGINGFACE_API_KEY', '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')
 
 app = Flask(__name__,
             static_url_path='/static',
