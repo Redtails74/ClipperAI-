@@ -1,14 +1,20 @@
 from flask import Flask, request, jsonify, render_template
 from flask_cors import CORS
-from transformers import AutoModelForCausalLM, AutoTokenizer
-import torch
+from transformers import AutoModelForCausalLM, AutoTokenizer, pipeline
+import logging
 import os
+from collections import deque
+import re
 
 # Configuration
 class Config:
-    MAX_HISTORY = 10
-    MODEL_NAME = 'microsoft/DialoGPT-medium'
-    API_KEY = os.getenv('HUGGINGFACE_API_KEY', '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')
+    MAX_HISTORY = 10  # Increased to keep more context
+    MODEL_NAME = 'microsoft/DialoGPT-medium'  # Better suited for conversational AI
+    API_KEY = os.getenv('HUGGINGFACE_API_KEY', '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')  # Hugging Face token
+
+# Setting up logger
+logging.basicConfig(level=logging.INFO)
+logger = logging.getLogger(__name__)
 
 app = Flask(__name__,
             static_url_path='/static',
@@ -18,18 +24,15 @@ CORS(app, resources={r"/api/*": {"origins": "*"}})
 
 # Load model and tokenizer
 try:
-    tokenizer = AutoTokenizer.from_pretrained(Config.MODEL_NAME, use_auth_token=Config.API_KEY)
     model = AutoModelForCausalLM.from_pretrained(Config.MODEL_NAME, use_auth_token=Config.API_KEY)
-    model.eval()
-    # Model might be on CPU by default, move it to GPU if available
-    if torch.cuda.is_available():
-        model = model.cuda()
+    tokenizer = AutoTokenizer.from_pretrained(Config.MODEL_NAME, use_auth_token=Config.API_KEY)
+    generator = pipeline('text-generation', model=model, tokenizer=tokenizer, device=0 if os.environ.get('CUDA_VISIBLE_DEVICES') else -1)
 except Exception as e:
-    print(f"Error loading model or tokenizer: {e}")
+    logger.error(f"Error loading model or tokenizer: {e}")
     raise
 
-# Conversation history
-conversation_memory = []
+# Use deque for efficient memory management of conversation history
+conversation_memory = deque(maxlen=Config.MAX_HISTORY)
 
 @app.route('/')
 def home():
@@ -45,39 +48,45 @@ def chat():
     # Add user message to conversation history
     conversation_memory.append(f"user: {user_message}")
 
-    # Construct prompt from conversation history
-    prompt = "\n".join(conversation_memory)
+    try:
+        # Construct prompt from conversation history
+        prompt = "\n".join(conversation_memory)
 
-    # Tokenize the input
-    inputs = tokenizer.encode(prompt + tokenizer.eos_token, return_tensors='pt')
-    if torch.cuda.is_available():
-        inputs = inputs.cuda()
-
-    # Generate response
-    with torch.no_grad():
-        outputs = model.generate(
-            inputs,
-            max_length=1000,
+        # Generate response
+        response = generator(
+            prompt,
+            max_length=150,
             do_sample=True,
+            temperature=0.7,
             top_k=50,
             top_p=0.9,
-            temperature=0.7,
+            num_return_sequences=1,
+            pad_token_id=tokenizer.eos_token_id,
             no_repeat_ngram_size=3,
             repetition_penalty=1.3
         )
 
-    # Decode the output
-    response = tokenizer.decode(outputs[0], skip_special_tokens=True)
-    response_text = response.split('assistant:')[-1].strip() if 'assistant:' in response else response.split('\n')[-1].strip()
+        # Extract the generated text
+        generated_text = response[0]['generated_text']
+        response_text = generated_text.split('assistant:')[-1].strip() if 'assistant:' in generated_text else generated_text.split('\n')[-1].strip()
 
-    # Add AI's response to conversation history
-    conversation_memory.append(f"assistant: {response_text}")
+        # Filter out inappropriate language
+        response_text = filter_inappropriate_words(response_text)
 
-    # Keep history to the last N messages
-    while len(conversation_memory) > Config.MAX_HISTORY:
-        conversation_memory.pop(0)
+        # Add AI's response to conversation history
+        conversation_memory.append(f"assistant: {response_text}")
 
-    return jsonify({'response': response_text, 'conversation': list(conversation_memory)})
+        return jsonify({'response': response_text, 'conversation': list(conversation_memory)})
+
+    except Exception as e:
+        logger.error(f"Error during chat processing: {e}")
+        return jsonify({'error': 'Internal server error'}), 500
+
+def filter_inappropriate_words(text):
+    # Implement or adjust this function to filter out inappropriate language
+    bad_words = ["badword1", "badword2"]  # Replace with actual bad words list
+    pattern = r'\b(?:' + '|'.join(map(re.escape, bad_words)) + r')\b'
+    return re.sub(pattern, '*' * 8, text, flags=re.IGNORECASE)
 
 if __name__ == '__main__':
     app.run(host='0.0.0.0', port=5000, debug=True)
