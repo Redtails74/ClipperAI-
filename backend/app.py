@@ -79,12 +79,12 @@ def chat():
                 **inputs,
                 max_length=150,
                 do_sample=True,
-                temperature=0.8,  # Increased for more randomness
+                temperature=1.2,  # Increased for more randomness
                 top_k=50,
                 top_p=0.95,  # Increased slightly for more randomness
                 num_return_sequences=1,
                 no_repeat_ngram_size=3,
-                repetition_penalty=1.1  # Lowered slightly to allow more repetition if contextually relevant
+                repetition_penalty=0.9  # Decreased to allow more repetition
             )
 
         response_text = tokenizer.decode(outputs[0], skip_special_tokens=True)
