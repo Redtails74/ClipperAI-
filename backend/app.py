@@ -26,6 +26,10 @@ CORS(app, resources={r"/api/*": {"origins": "*"}})
 try:
     model = AutoModelForCausalLM.from_pretrained(Config.MODEL_NAME, use_auth_token=Config.API_KEY)
     tokenizer = AutoTokenizer.from_pretrained(Config.MODEL_NAME, use_auth_token=Config.API_KEY)
+    
+    # Set pad_token to eos_token (common workaround for models without a pad_token)
+    tokenizer.pad_token = tokenizer.eos_token
+    
     generator = pipeline('text-generation', model=model, tokenizer=tokenizer, device=0 if os.environ.get('CUDA_VISIBLE_DEVICES') else -1)
 except Exception as e:
     logger.error(f"Error loading model or tokenizer: {e}")
