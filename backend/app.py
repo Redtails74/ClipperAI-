@@ -8,7 +8,7 @@ import re
 
 # Configuration
 class Config:
-    MAX_HISTORY = 10  # Increased to keep more context
+    MAX_HISTORY = 5  # Keep only the last few exchanges to avoid excessive context
     MODEL_NAME = 'microsoft/DialoGPT-medium'  # Better suited for conversational AI
     API_KEY = os.getenv('HUGGINGFACE_API_KEY', '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')  # Hugging Face token
 
@@ -57,9 +57,9 @@ def chat():
             prompt,
             max_length=150,
             do_sample=True,
-            temperature=0.7,
-            top_k=50,
-            top_p=0.9,
+            temperature=0.6,  # Lower temperature to reduce repetitiveness
+            top_k=40,  # Experiment with smaller values of top_k
+            top_p=0.95,  # Increase top_p for diversity
             num_return_sequences=1,
             pad_token_id=tokenizer.eos_token_id,
             no_repeat_ngram_size=3,
@@ -83,7 +83,7 @@ def chat():
         return jsonify({'error': 'Internal server error'}), 500
 
 def filter_inappropriate_words(text):
-    # Implement or adjust this function to filter out inappropriate language
+    """Filters out inappropriate language from the response."""
     bad_words = ["badword1", "badword2"]  # Replace with actual bad words list
     pattern = r'\b(?:' + '|'.join(map(re.escape, bad_words)) + r')\b'
     return re.sub(pattern, '*' * 8, text, flags=re.IGNORECASE)
