@@ -89,23 +89,28 @@ def chat():
 
         response_text = tokenizer.decode(outputs[0], skip_special_tokens=True)
         if is_repeating(response_text, user_message):
-            response_text = "I'm sorry, there seems to be an issue with my response. Could you please rephrase your question?"
+            # Try to generate a new response
+            for _ in range(5):
+                outputs = model.generate(
+                    **inputs,
+                    max_length=150,
+                    do_sample=True,
+                    temperature=1.2,  # Increased for more randomness
+                    top_k=50,
+                    top_p=0.95,  # Increased slightly for more randomness
+                    num_return_sequences=1,
+                    no_repeat_ngram_size=3,
+                    repetition_penalty=0.9  # Decreased to allow more repetition
+                )
+                response_text = tokenizer.decode(outputs[0], skip_special_tokens=True)
+                if not is_repeating(response_text, user_message):
+                    break
+            else:
+                response_text = "I'm sorry, I'm having trouble generating a response. Please try again later."
         else:
             response_text = response_text.split('Assistant:')[-1].strip() if 'Assistant:' in response_text else response_text.split('\n')[-1].strip()
 
         response_text = filter_inappropriate_words(response_text)
         conversation_memory.append(f"assistant: {response_text}")
 
-        return jsonify({'response': response_text, 'conversation': list(conversation_memory)})
-
-    except Exception as e:
-        logger.error(f"Error during chat processing: {e}")
-        return jsonify({'error': 'Internal server error'}), 500
-
-def filter_inappropriate_words(text):
-    bad_words = ["badword1", "badword2"]
-    pattern = r'\b(?:' + '|'.join(map(re.escape, bad_words)) + r')\b'
-    return re.sub(pattern, '*' * 8, text, flags=re.IGNORECASE)
-
-if __name__ == '__main__':
-    app.run(host='0.0.0.0', port=5000, debug=True)
+        return jsonify({'response': response_text,
