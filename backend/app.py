@@ -8,7 +8,7 @@ import re
 
 # Configuration
 class Config:
-    MAX_HISTORY = 5  # Limit conversation history to a few exchanges
+    MAX_HISTORY = 10  # Increased to keep more context
     MODEL_NAME = 'microsoft/DialoGPT-medium'  # Better suited for conversational AI
     API_KEY = os.getenv('HUGGINGFACE_API_KEY', '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')  # Hugging Face token
 
@@ -26,7 +26,6 @@ CORS(app, resources={r"/api/*": {"origins": "*"}})
 try:
     model = AutoModelForCausalLM.from_pretrained(Config.MODEL_NAME, use_auth_token=Config.API_KEY)
     tokenizer = AutoTokenizer.from_pretrained(Config.MODEL_NAME, use_auth_token=Config.API_KEY)
-    
     # Set pad_token to eos_token (common workaround for models without a pad_token)
     tokenizer.pad_token = tokenizer.eos_token
     
@@ -53,28 +52,27 @@ def chat():
     conversation_memory.append(f"user: {user_message}")
     
     try:
-        # Construct prompt from conversation history
-        # Only include the previous assistant's response and the previous user message (don't repeat the user's input)
-        prompt = "\n".join([entry for entry in conversation_memory if not entry.startswith("user:")])
-
+        # Generate prompt from the conversation history
+        prompt = "\n".join(conversation_memory)
         logger.info(f"Generated prompt for model: {prompt}")
+        
+        # Check if prompt is empty
+        if not prompt:
+            logger.error("Error: Prompt is empty!")
+            return jsonify({'error': 'Prompt is empty'}), 500
 
         # Tokenize input with truncation to avoid long prompts
-        inputs = tokenizer(prompt, return_tensors='pt', truncation=True, max_length=1024, padding=True)
-
-        # Manually set the attention mask (required because pad_token == eos_token)
-        inputs['attention_mask'] = inputs['attention_mask'].fill_(1)
+        inputs = tokenizer.encode(prompt, return_tensors='pt', truncation=True, max_length=1024, padding=True)
 
         # Generate response
         response = generator(
-            prompt,
+            inputs,
             max_length=150,  # Adjust length to allow for more diverse responses
             do_sample=True,
             temperature=0.7,  # Moderate temperature for better variety in answers
             top_k=50,  # Experiment with smaller values of top_k
             top_p=0.9,  # Use higher value for more randomness
             num_return_sequences=1,
-            pad_token_id=tokenizer.eos_token_id,
             no_repeat_ngram_size=3,
             repetition_penalty=1.2  # Less penalty to allow for some repetition
         )
