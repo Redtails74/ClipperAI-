@@ -14,9 +14,9 @@ load_dotenv()
 # Configuration
 class Config:
     MAX_HISTORY = 10
-    # Change the model name to use HuggingFaceH4's Grok model
-    MODEL_NAME = 'HuggingFaceH4/mistral-7b-grok'
-    # Use environment variable if available, otherwise fallback to hardcoded API key
+    # Using a smaller model
+    MODEL_NAME = 'openchat/openchat_3.5'
+    # API key might not be necessary for all models, but keeping for consistency
     API_KEY = os.getenv('HUGGINGFACE_API_KEY', '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')
 
 # Setting up logger
@@ -51,6 +51,9 @@ def load_model_on_first_request():
             model.eval()  # Set model to evaluation mode
             if torch.cuda.is_available():
                 model = model.cuda()
+
+            # If the model supports it, you can also use quantization to reduce memory usage
+            # model = model.half()  # This would use half-precision (float16) for the model parameters
 
             # Initialize the text generation pipeline
             generator = pipeline('text-generation', model=model, tokenizer=tokenizer, device=0 if torch.cuda.is_available() else -1)
