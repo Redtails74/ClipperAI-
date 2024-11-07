@@ -14,9 +14,11 @@ load_dotenv()
 # Configuration
 class Config:
     MAX_HISTORY = 10
-    MODEL_NAME = 'microsoft/DialoGPT-large'
+    # Change the model name to use Grok by xAI
+    MODEL_NAME = 'xAI/grok'
     # Use environment variable if available, otherwise fallback to hardcoded API key
-    API_KEY = os.getenv('HUGGINGFACE_API_KEY', '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')
+    # Note: Grok might not require an API key, adjust as necessary
+    API_KEY = os.getenv('HUGGINGFACE_API_KEY', '')
 
 # Setting up logger
 logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
@@ -33,7 +35,7 @@ model = None
 tokenizer = None
 generator = None
 
-# Use before_request to load model on first request, as before_first_request is deprecated
+# Use before_request to load model on first request
 @app.before_request
 def load_model_on_first_request():
     global model, tokenizer, generator
