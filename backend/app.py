@@ -6,7 +6,6 @@ import os
 from collections import deque
 import re
 import torch
-from functools import lru_cache
 
 # Configuration
 class Config:
@@ -25,26 +24,21 @@ app = Flask(__name__,
 CORS(app, resources={r"/api/*": {"origins": "*"}})
 
 # Load model and tokenizer
-@lru_cache(maxsize=None)
-def load_model_and_tokenizer():
-    try:
-        model = AutoModelForCausalLM.from_pretrained(Config.MODEL_NAME, use_auth_token=Config.API_KEY)
-        tokenizer = AutoTokenizer.from_pretrained(Config.MODEL_NAME, use_auth_token=Config.API_KEY)
-        
-        if tokenizer.pad_token is None:
-            tokenizer.pad_token = tokenizer.eos_token
-        
-        if torch.cuda.is_available():
-            model = model.cuda()
-        
-        model.eval()
-        return model, tokenizer
-    except Exception as e:
-        logger.error(f"Error loading model or tokenizer: {e}")
-        raise
-
-model, tokenizer = load_model_and_tokenizer()
-generator = pipeline('text-generation', model=model, tokenizer=tokenizer, device=0 if os.environ.get('CUDA_VISIBLE_DEVICES') else -1)
+try:
+    model = AutoModelForCausalLM.from_pretrained(Config.MODEL_NAME, use_auth_token=Config.API_KEY)
+    tokenizer = AutoTokenizer.from_pretrained(Config.MODEL_NAME, use_auth_token=Config.API_KEY)
+    
+    if tokenizer.pad_token is None:
+        tokenizer.pad_token = tokenizer.eos_token
+    
+    model.eval()  
+    if torch.cuda.is_available():
+        model = model.cuda()
+    
+    generator = pipeline('text-generation', model=model, tokenizer=tokenizer, device=0 if os.environ.get('CUDA_VISIBLE_DEVICES') else -1)
+except Exception as e:
+    logger.error(f"Error loading model or tokenizer: {e}")
+    raise
 
 # Use deque for efficient memory management of conversation history
 conversation_memory = deque(maxlen=Config.MAX_HISTORY)
@@ -133,4 +127,4 @@ def filter_inappropriate_words(text):
 
 if __name__ == '__main__':
     port = int(os.environ.get('PORT', 5000))
-    app.run(debug=False, port=port, host='0.0.0.0')  # Debug set to False for production
+    app.run(debug=False, port=port, host='0.0.0.0')
