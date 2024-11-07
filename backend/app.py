@@ -14,11 +14,10 @@ load_dotenv()
 # Configuration
 class Config:
     MAX_HISTORY = 10
-    # Change the model name to use Grok by xAI
-    MODEL_NAME = 'xAI/grok'
+    # Change the model name to use HuggingFaceH4's Grok model
+    MODEL_NAME = 'HuggingFaceH4/mistral-7b-grok'
     # Use environment variable if available, otherwise fallback to hardcoded API key
-    # Note: Grok might not require an API key, adjust as necessary
-    API_KEY = os.getenv('HUGGINGFACE_API_KEY', '')
+    API_KEY = os.getenv('HUGGINGFACE_API_KEY', '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')
 
 # Setting up logger
 logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
@@ -41,7 +40,7 @@ def load_model_on_first_request():
     global model, tokenizer, generator
     if model is None:  # Check if model is already loaded to avoid reloading
         try:
-            # Load the model and tokenizer
+            # Load the model and tokenizer with the API key
             model = AutoModelForCausalLM.from_pretrained(Config.MODEL_NAME, token=Config.API_KEY)
             tokenizer = AutoTokenizer.from_pretrained(Config.MODEL_NAME, token=Config.API_KEY)
             
