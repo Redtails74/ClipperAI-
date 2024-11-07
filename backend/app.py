@@ -28,7 +28,7 @@ app = Flask(__name__,
             template_folder='./templates')
 CORS(app, resources={r"/api/*": {"origins": "*"}})
 
-# Load model and tokenizer
+# Global variables to hold model and tokenizer
 model = None
 tokenizer = None
 generator = None
