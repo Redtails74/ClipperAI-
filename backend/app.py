@@ -25,11 +25,12 @@ CORS(app, resources={r"/api/*": {"origins": "*"}})
 
 # Load model and tokenizer
 try:
-    model = AutoModelForCausalLM.from_pretrained(Config.MODEL_NAME, use_auth_token=Config.API_KEY)
-    tokenizer = AutoTokenizer.from_pretrained(Config.MODEL_NAME, use_auth_token=Config.API_KEY)
+    model = AutoModelForCausalLM.from_pretrained(Config.MODEL_NAME, token=Config.API_KEY)
+    tokenizer = AutoTokenizer.from_pretrained(Config.MODEL_NAME, token=Config.API_KEY)
     
+    # Explicitly set pad_token if it's not defined
     if tokenizer.pad_token is None:
-        tokenizer.pad_token = tokenizer.eos_token
+        tokenizer.pad_token = tokenizer.eos_token or '<pad>'  # Use eos_token if available or define a new one
     
     model.eval()  
     if torch.cuda.is_available():
@@ -107,6 +108,7 @@ def chat():
             else:
                 response_text = "I'm sorry, I'm having trouble generating a response. Please try again later."
         else:
+            # This logic ensures we're getting the part of the response that comes after the assistant prompt
             response_text = response_text.split('Assistant:')[-1].strip() if 'Assistant:' in response_text else response_text.split('\n')[-1].strip()
 
         response_text = filter_inappropriate_words(response_text)
