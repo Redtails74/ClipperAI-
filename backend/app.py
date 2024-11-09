@@ -7,7 +7,6 @@ from collections import deque
 import re
 import torch
 import openai  # OpenAI API client
-from dotenv import load_dotenv
 
 # Set up Flask app configuration
 class Config:
@@ -39,7 +38,7 @@ def load_models_on_first_request():
     global huggingface_model, huggingface_tokenizer, huggingface_generator
     if huggingface_model is None:  # Check if model is already loaded to avoid reloading
         try:
-            # Initialize Hugging Face model and tokenizer
+            # Initialize Hugging Face model and tokenizer for masked LM (DistilBERT)
             huggingface_model = AutoModelForCausalLM.from_pretrained(Config.HUGGINGFACE_MODEL_NAME)
             huggingface_tokenizer = AutoTokenizer.from_pretrained(Config.HUGGINGFACE_MODEL_NAME)
             
@@ -51,7 +50,7 @@ def load_models_on_first_request():
             if torch.cuda.is_available():
                 huggingface_model = huggingface_model.cuda()
 
-            # Initialize Hugging Face text generation pipeline
+            # For Hugging Face, if using text generation, you could replace with a different model, e.g., GPT-2.
             huggingface_generator = pipeline('text-generation', model=huggingface_model, tokenizer=huggingface_tokenizer, device=0 if torch.cuda.is_available() else -1)
 
             logger.info(f"Hugging Face model and tokenizer loaded successfully: {Config.HUGGINGFACE_MODEL_NAME}")
@@ -99,41 +98,28 @@ def chat():
         )
         openai_response_text = openai_response.choices[0].text.strip()
 
-        # Prepare response from Hugging Face's DistilBERT (or other Hugging Face models)
-        huggingface_inputs = huggingface_tokenizer(prompt, return_tensors='pt', truncation=True, max_length=1024, padding=True)
+        # Hugging Face's DistilBERT (Masked LM) cannot generate text directly like GPT-2 or GPT-3.
+        # If you need text generation, consider using GPT-2 from Hugging Face.
+        # But for now, let's use a masked prediction with Hugging Face.
+        huggingface_inputs = huggingface_tokenizer(user_message, return_tensors='pt', truncation=True, max_length=512, padding=True)
         if torch.cuda.is_available():
             huggingface_inputs = {key: value.cuda() for key, value in huggingface_inputs.items()}
 
         with torch.no_grad():
-            huggingface_outputs = huggingface_model.generate(
-                **huggingface_inputs,
-                max_length=150,
-                do_sample=True,
-                temperature=1.0,
-                top_k=50,
-                top_p=0.95,
-                num_return_sequences=1,
-                no_repeat_ngram_size=3,
-                repetition_penalty=0.9
-            )
+            huggingface_outputs = huggingface_model(**huggingface_inputs)
+        
+        # Get prediction for the masked token
+        predicted_token = huggingface_tokenizer.decode(huggingface_outputs.logits.argmax(dim=-1)[0], skip_special_tokens=True)
 
-        huggingface_response_text = huggingface_tokenizer.decode(huggingface_outputs[0], skip_special_tokens=True)
+        # Combine the responses from OpenAI and Hugging Face (DistilBERT)
+        huggingface_response_text = f"DistilBERT's masked prediction: {predicted_token}"
 
         # Retry generating response if repetition is detected
         if is_repeating(huggingface_response_text, user_message):
             for _ in range(5):  # Try generating again up to 5 times if repetition occurs
-                huggingface_outputs = huggingface_model.generate(
-                    **huggingface_inputs,
-                    max_length=150,
-                    do_sample=True,
-                    temperature=1.0,
-                    top_k=50,
-                    top_p=0.95,
-                    num_return_sequences=1,
-                    no_repeat_ngram_size=3,
-                    repetition_penalty=0.9
-                )
-                huggingface_response_text = huggingface_tokenizer.decode(huggingface_outputs[0], skip_special_tokens=True)
+                huggingface_outputs = huggingface_model(**huggingface_inputs)
+                predicted_token = huggingface_tokenizer.decode(huggingface_outputs.logits.argmax(dim=-1)[0], skip_special_tokens=True)
+                huggingface_response_text = f"DistilBERT's masked prediction: {predicted_token}"
                 if not is_repeating(huggingface_response_text, user_message):
                     break
             else:
