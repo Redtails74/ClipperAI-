@@ -6,15 +6,17 @@ import os
 from collections import deque
 import re
 import torch
+import openai  # OpenAI API client
 from dotenv import load_dotenv
 
-# Load environment variables from .env file
-load_dotenv()
+# Set up OpenAI and Hugging Face API keys directly
+openai.api_key = "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"
+HUGGINGFACE_API_KEY = "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"
 
+# Set up Flask app configuration
 class Config:
     MAX_HISTORY = 10
-    MODEL_NAME = 'distilbert-base-uncased'  # You can change this to 'DialoGPT-medium' for better results
-    API_KEY = os.getenv('HUGGINGFACE_API_KEY', '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')
+    HUGGINGFACE_MODEL_NAME = 'distilbert-base-uncased'  # Use your model of choice
 
 # Setting up logger
 logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
@@ -26,34 +28,38 @@ app = Flask(__name__,
             template_folder='./templates')
 CORS(app, resources={r"/api/*": {"origins": "*"}})
 
-# Load model and tokenizer
-model = None
-tokenizer = None
-generator = None
+# Load model and tokenizer for Hugging Face and OpenAI
+huggingface_model = None
+huggingface_tokenizer = None
+huggingface_generator = None
+
+# Set up OpenAI API Key
+openai.api_key = Config.OPENAI_API_KEY
 
 @app.before_request
-def load_model_on_first_request():
-    global model, tokenizer, generator
-    if model is None:  # Check if model is already loaded to avoid reloading
+def load_models_on_first_request():
+    global huggingface_model, huggingface_tokenizer, huggingface_generator
+    if huggingface_model is None:  # Check if model is already loaded to avoid reloading
         try:
-            model = AutoModelForCausalLM.from_pretrained(Config.MODEL_NAME)
-            tokenizer = AutoTokenizer.from_pretrained(Config.MODEL_NAME)
+            # Initialize Hugging Face model and tokenizer
+            huggingface_model = AutoModelForCausalLM.from_pretrained(Config.HUGGINGFACE_MODEL_NAME)
+            huggingface_tokenizer = AutoTokenizer.from_pretrained(Config.HUGGINGFACE_MODEL_NAME)
             
             # Ensure pad_token is set
-            if tokenizer.pad_token is None:
-                tokenizer.pad_token = tokenizer.eos_token or '<pad>'
+            if huggingface_tokenizer.pad_token is None:
+                huggingface_tokenizer.pad_token = huggingface_tokenizer.eos_token or '<pad>'
 
-            model.eval()  # Set model to evaluation mode
+            huggingface_model.eval()  # Set model to evaluation mode
             if torch.cuda.is_available():
-                model = model.cuda()
+                huggingface_model = huggingface_model.cuda()
 
-            # Initialize the text generation pipeline
-            generator = pipeline('text-generation', model=model, tokenizer=tokenizer, device=0 if torch.cuda.is_available() else -1)
+            # Initialize Hugging Face text generation pipeline
+            huggingface_generator = pipeline('text-generation', model=huggingface_model, tokenizer=huggingface_tokenizer, device=0 if torch.cuda.is_available() else -1)
 
-            logger.info(f"Model and tokenizer loaded successfully: {Config.MODEL_NAME}")
+            logger.info(f"Hugging Face model and tokenizer loaded successfully: {Config.HUGGINGFACE_MODEL_NAME}")
 
         except Exception as e:
-            logger.error(f"Error loading model or tokenizer: {e}")
+            logger.error(f"Error loading Hugging Face model or tokenizer: {e}")
             raise
 
 # Use deque for efficient memory management of conversation history
@@ -86,33 +92,40 @@ def chat():
         # Construct prompt based on the conversation context
         prompt = f"Assistant: Here's my response:\n{conversation_context}"
 
-        # Tokenize the prompt
-        inputs = tokenizer(prompt, return_tensors='pt', truncation=True, max_length=1024, padding=True)
-        if torch.cuda.is_available():
-            inputs = {key: value.cuda() for key, value in inputs.items()}
+        # Prepare response from OpenAI's GPT model
+        openai_response = openai.Completion.create(
+            engine="text-davinci-003",  # Or you can use "gpt-4" or other available models
+            prompt=user_message,
+            max_tokens=150,
+            temperature=0.7
+        )
+        openai_response_text = openai_response.choices[0].text.strip()
 
-        # Generate a response from the model
+        # Prepare response from Hugging Face's DistilBERT (or other Hugging Face models)
+        huggingface_inputs = huggingface_tokenizer(prompt, return_tensors='pt', truncation=True, max_length=1024, padding=True)
+        if torch.cuda.is_available():
+            huggingface_inputs = {key: value.cuda() for key, value in huggingface_inputs.items()}
+
         with torch.no_grad():
-            outputs = model.generate(
-                **inputs,
+            huggingface_outputs = huggingface_model.generate(
+                **huggingface_inputs,
                 max_length=150,
                 do_sample=True,
-                temperature=1.0,   # Adjust temperature for more varied responses
-                top_k=50,          # Limit the token space to the top 50 tokens
-                top_p=0.95,        # Use nucleus sampling to diversify
+                temperature=1.0,
+                top_k=50,
+                top_p=0.95,
                 num_return_sequences=1,
                 no_repeat_ngram_size=3,
                 repetition_penalty=0.9
             )
 
-        # Decode the generated response
-        response_text = tokenizer.decode(outputs[0], skip_special_tokens=True)
+        huggingface_response_text = huggingface_tokenizer.decode(huggingface_outputs[0], skip_special_tokens=True)
 
         # Retry generating response if repetition is detected
-        if is_repeating(response_text, user_message):
+        if is_repeating(huggingface_response_text, user_message):
             for _ in range(5):  # Try generating again up to 5 times if repetition occurs
-                outputs = model.generate(
-                    **inputs,
+                huggingface_outputs = huggingface_model.generate(
+                    **huggingface_inputs,
                     max_length=150,
                     do_sample=True,
                     temperature=1.0,
@@ -122,22 +135,25 @@ def chat():
                     no_repeat_ngram_size=3,
                     repetition_penalty=0.9
                 )
-                response_text = tokenizer.decode(outputs[0], skip_special_tokens=True)
-                if not is_repeating(response_text, user_message):
+                huggingface_response_text = huggingface_tokenizer.decode(huggingface_outputs[0], skip_special_tokens=True)
+                if not is_repeating(huggingface_response_text, user_message):
                     break
             else:
-                response_text = "I'm sorry, I'm having trouble generating a response. Please try again later."
-        else:
-            # Ensure the assistant response starts after the "Assistant:" part
-            response_text = response_text.split('Assistant:')[-1].strip() if 'Assistant:' in response_text else response_text.split('\n')[-1].strip()
+                huggingface_response_text = "I'm sorry, I'm having trouble generating a response. Please try again later."
 
-        # Filter inappropriate content from the response
-        response_text = filter_inappropriate_words(response_text)
+        # Filter inappropriate content from both models' responses
+        openai_response_text = filter_inappropriate_words(openai_response_text)
+        huggingface_response_text = filter_inappropriate_words(huggingface_response_text)
         
-        # Append the assistant's response to conversation memory
-        conversation_memory.append(f"assistant: {response_text}")
+        # Append both responses to conversation history
+        conversation_memory.append(f"openai: {openai_response_text}")
+        conversation_memory.append(f"huggingface: {huggingface_response_text}")
 
-        return jsonify({'response': response_text, 'conversation': list(conversation_memory)})
+        return jsonify({
+            'openai_response': openai_response_text,
+            'huggingface_response': huggingface_response_text,
+            'conversation': list(conversation_memory)
+        })
 
     except Exception as e:
         logger.error(f"Error during chat processing: {e}")
