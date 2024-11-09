@@ -140,4 +140,30 @@ def chat():
                 huggingface_response_text = "I'm sorry, I'm having trouble generating a response. Please try again later."
 
         # Filter inappropriate content from both models' responses
-        open
+        openai_response_text = filter_inappropriate_words(openai_response_text)
+        huggingface_response_text = filter_inappropriate_words(huggingface_response_text)
+        
+        # Append both responses to conversation history
+        conversation_memory.append(f"openai: {openai_response_text}")
+        conversation_memory.append(f"huggingface: {huggingface_response_text}")
+
+        return jsonify({
+            'openai_response': openai_response_text,
+            'huggingface_response': huggingface_response_text,
+            'conversation': list(conversation_memory)
+        })
+
+    except Exception as e:
+        logger.error(f"Error during chat processing: {e}")
+        return jsonify({'error': 'Internal server error'}), 500
+
+def filter_inappropriate_words(text):
+    """Filters inappropriate words from the generated text."""
+    bad_words = ["badword1", "badword2"]  # Replace with actual list of bad words
+    for word in bad_words:
+        text = re.sub(r'\b' + re.escape(word) + r'\b', lambda m: '*' * len(m.group()), text, flags=re.IGNORECASE)
+    return text
+
+if __name__ == '__main__':
+    port = int(os.environ.get('PORT', 5000))
+    app.run(debug=False, port=port, host='0.0.0.0')
