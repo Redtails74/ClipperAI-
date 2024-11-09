@@ -9,14 +9,15 @@ import torch
 import openai  # OpenAI API client
 from dotenv import load_dotenv
 
-# Set up OpenAI and Hugging Face API keys directly
-openai.api_key = "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"
-HUGGINGFACE_API_KEY = "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"
-
 # Set up Flask app configuration
 class Config:
     MAX_HISTORY = 10
     HUGGINGFACE_MODEL_NAME = 'distilbert-base-uncased'  # Use your model of choice
+    OPENAI_API_KEY = "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"  # Add your OpenAI key here
+    HUGGINGFACE_API_KEY = "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"  # Add your Hugging Face key here
+
+# Set up OpenAI API Key
+openai.api_key = Config.OPENAI_API_KEY
 
 # Setting up logger
 logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
@@ -32,9 +33,6 @@ CORS(app, resources={r"/api/*": {"origins": "*"}})
 huggingface_model = None
 huggingface_tokenizer = None
 huggingface_generator = None
-
-# Set up OpenAI API Key
-openai.api_key = Config.OPENAI_API_KEY
 
 @app.before_request
 def load_models_on_first_request():
@@ -142,30 +140,4 @@ def chat():
                 huggingface_response_text = "I'm sorry, I'm having trouble generating a response. Please try again later."
 
         # Filter inappropriate content from both models' responses
-        openai_response_text = filter_inappropriate_words(openai_response_text)
-        huggingface_response_text = filter_inappropriate_words(huggingface_response_text)
-        
-        # Append both responses to conversation history
-        conversation_memory.append(f"openai: {openai_response_text}")
-        conversation_memory.append(f"huggingface: {huggingface_response_text}")
-
-        return jsonify({
-            'openai_response': openai_response_text,
-            'huggingface_response': huggingface_response_text,
-            'conversation': list(conversation_memory)
-        })
-
-    except Exception as e:
-        logger.error(f"Error during chat processing: {e}")
-        return jsonify({'error': 'Internal server error'}), 500
-
-def filter_inappropriate_words(text):
-    """Filters inappropriate words from the generated text."""
-    bad_words = ["badword1", "badword2"]  # Replace with actual list of bad words
-    for word in bad_words:
-        text = re.sub(r'\b' + re.escape(word) + r'\b', lambda m: '*' * len(m.group()), text, flags=re.IGNORECASE)
-    return text
-
-if __name__ == '__main__':
-    port = int(os.environ.get('PORT', 5000))
-    app.run(debug=False, port=port, host='0.0.0.0')
+        open
