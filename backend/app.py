@@ -1,11 +1,11 @@
 from flask import Flask, request, jsonify, render_template
 from flask_cors import CORS
-from transformers import AutoModelForCausalLM, AutoTokenizer, pipeline, AutoModelForQuestionAnswering
+from transformers import AutoModelForCausalLM, AutoTokenizer, pipeline
 import logging
 import os
 from collections import deque
-import torch
 import re
+import torch
 from dotenv import load_dotenv
 
 # Load environment variables from .env file
@@ -13,8 +13,7 @@ load_dotenv()
 
 class Config:
     MAX_HISTORY = 10
-    QA_MODEL_NAME = 'distilbert-base-uncased-distilled-squad'  # QA Model
-    DIALOGUE_MODEL_NAME = 'microsoft/DialoGPT-medium'  # DialoGPT Model for dialogue
+    MODEL_NAME = 'distilbert-base-uncased'  # You can change this to 'DialoGPT-medium' for better results
     API_KEY = os.getenv('HUGGINGFACE_API_KEY', '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')
 
 # Setting up logger
@@ -27,38 +26,34 @@ app = Flask(__name__,
             template_folder='./templates')
 CORS(app, resources={r"/api/*": {"origins": "*"}})
 
-# Load models and tokenizers
-qa_model = None
-qa_tokenizer = None
-dialogue_model = None
-dialogue_tokenizer = None
+# Load model and tokenizer
+model = None
+tokenizer = None
 generator = None
 
 @app.before_request
-def load_models_on_first_request():
-    global qa_model, qa_tokenizer, dialogue_model, dialogue_tokenizer, generator
-    if qa_model is None or dialogue_model is None:  # Check if models are already loaded to avoid reloading
+def load_model_on_first_request():
+    global model, tokenizer, generator
+    if model is None:  # Check if model is already loaded to avoid reloading
         try:
-            # Load QA model and tokenizer
-            qa_model = AutoModelForQuestionAnswering.from_pretrained(Config.QA_MODEL_NAME)
-            qa_tokenizer = AutoTokenizer.from_pretrained(Config.QA_MODEL_NAME)
+            model = AutoModelForCausalLM.from_pretrained(Config.MODEL_NAME)
+            tokenizer = AutoTokenizer.from_pretrained(Config.MODEL_NAME)
             
-            # Load Dialogue model and tokenizer
-            dialogue_model = AutoModelForCausalLM.from_pretrained(Config.DIALOGUE_MODEL_NAME)
-            dialogue_tokenizer = AutoTokenizer.from_pretrained(Config.DIALOGUE_MODEL_NAME)
-            
-            dialogue_model.eval()  # Set dialogue model to evaluation mode
-            qa_model.eval()  # Set QA model to evaluation mode
+            # Ensure pad_token is set
+            if tokenizer.pad_token is None:
+                tokenizer.pad_token = tokenizer.eos_token or '<pad>'
+
+            model.eval()  # Set model to evaluation mode
             if torch.cuda.is_available():
-                qa_model = qa_model.cuda()
-                dialogue_model = dialogue_model.cuda()
+                model = model.cuda()
 
-            # Initialize the text generation pipeline for DialoGPT
-            generator = pipeline('text-generation', model=dialogue_model, tokenizer=dialogue_tokenizer, device=0 if torch.cuda.is_available() else -1)
+            # Initialize the text generation pipeline
+            generator = pipeline('text-generation', model=model, tokenizer=tokenizer, device=0 if torch.cuda.is_available() else -1)
 
-            logger.info("Models and tokenizers loaded successfully.")
+            logger.info(f"Model and tokenizer loaded successfully: {Config.MODEL_NAME}")
+
         except Exception as e:
-            logger.error(f"Error loading models or tokenizers: {e}")
+            logger.error(f"Error loading model or tokenizer: {e}")
             raise
 
 # Use deque for efficient memory management of conversation history
@@ -68,6 +63,12 @@ conversation_memory = deque(maxlen=Config.MAX_HISTORY)
 def home():
     """Serve the homepage."""
     return render_template('index.html')
+
+def is_repeating(generated_text, user_message):
+    """Check if the generated text is a repetition of the user's message."""
+    last_user_input = "user: " + user_message
+    generated_response = generated_text.split('\n')[-1].strip()
+    return last_user_input.lower() in generated_response.lower()
 
 @app.route('/api/chat', methods=['POST'])
 def chat():
@@ -79,33 +80,60 @@ def chat():
     conversation_memory.append(f"user: {user_message}")
     
     try:
-        # Check if the message is a question
-        if is_question(user_message):
-            # Construct context for the QA model
-            context = "\n".join([entry for entry in conversation_memory])
+        # Build a conversation context with the last few exchanges
+        conversation_context = "\n".join([entry for entry in conversation_memory if entry.startswith("user:") or entry.startswith("assistant:")])
+        
+        # Construct prompt based on the conversation context
+        prompt = f"Assistant: Here's my response:\n{conversation_context}"
 
-            # Tokenize the context and user message
-            inputs = qa_tokenizer(context, user_message, return_tensors='pt', truncation=True, max_length=1024, padding=True)
-            if torch.cuda.is_available():
-                inputs = {key: value.cuda() for key, value in inputs.items()}
+        # Tokenize the prompt
+        inputs = tokenizer(prompt, return_tensors='pt', truncation=True, max_length=1024, padding=True)
+        if torch.cuda.is_available():
+            inputs = {key: value.cuda() for key, value in inputs.items()}
 
-            # Generate answer using the QA model
-            with torch.no_grad():
-                outputs = qa_model(**inputs)
-                start_scores = outputs.start_logits
-                end_scores = outputs.end_logits
+        # Generate a response from the model
+        with torch.no_grad():
+            outputs = model.generate(
+                **inputs,
+                max_length=150,
+                do_sample=True,
+                temperature=1.0,   # Adjust temperature for more varied responses
+                top_k=50,          # Limit the token space to the top 50 tokens
+                top_p=0.95,        # Use nucleus sampling to diversify
+                num_return_sequences=1,
+                no_repeat_ngram_size=3,
+                repetition_penalty=0.9
+            )
 
-            # Decode the answer
-            start_idx = torch.argmax(start_scores)
-            end_idx = torch.argmax(end_scores)
-            answer_ids = inputs.input_ids[0][start_idx:end_idx + 1]
-            response_text = qa_tokenizer.decode(answer_ids, skip_special_tokens=True)
+        # Decode the generated response
+        response_text = tokenizer.decode(outputs[0], skip_special_tokens=True)
+
+        # Retry generating response if repetition is detected
+        if is_repeating(response_text, user_message):
+            for _ in range(5):  # Try generating again up to 5 times if repetition occurs
+                outputs = model.generate(
+                    **inputs,
+                    max_length=150,
+                    do_sample=True,
+                    temperature=1.0,
+                    top_k=50,
+                    top_p=0.95,
+                    num_return_sequences=1,
+                    no_repeat_ngram_size=3,
+                    repetition_penalty=0.9
+                )
+                response_text = tokenizer.decode(outputs[0], skip_special_tokens=True)
+                if not is_repeating(response_text, user_message):
+                    break
+            else:
+                response_text = "I'm sorry, I'm having trouble generating a response. Please try again later."
         else:
-            # For conversational responses, use DialoGPT
-            prompt = "\n".join([entry for entry in conversation_memory if entry.startswith("user:")])
-            response = generator(prompt, max_length=150, num_return_sequences=1)[0]['generated_text']
-            response_text = response.split("Assistant:")[-1].strip()
+            # Ensure the assistant response starts after the "Assistant:" part
+            response_text = response_text.split('Assistant:')[-1].strip() if 'Assistant:' in response_text else response_text.split('\n')[-1].strip()
 
+        # Filter inappropriate content from the response
+        response_text = filter_inappropriate_words(response_text)
+        
         # Append the assistant's response to conversation memory
         conversation_memory.append(f"assistant: {response_text}")
 
@@ -115,12 +143,12 @@ def chat():
         logger.error(f"Error during chat processing: {e}")
         return jsonify({'error': 'Internal server error'}), 500
 
-def is_question(text):
-    """Determine if the user input is a question based on simple heuristics."""
-    question_keywords = ['what', 'how', 'why', 'where', 'who', 'when']
-    if any(text.lower().startswith(keyword) for keyword in question_keywords) or '?' in text:
-        return True
-    return False
+def filter_inappropriate_words(text):
+    """Filters inappropriate words from the generated text."""
+    bad_words = ["badword1", "badword2"]  # Replace with actual list of bad words
+    for word in bad_words:
+        text = re.sub(r'\b' + re.escape(word) + r'\b', lambda m: '*' * len(m.group()), text, flags=re.IGNORECASE)
+    return text
 
 if __name__ == '__main__':
     port = int(os.environ.get('PORT', 5000))
