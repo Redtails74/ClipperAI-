@@ -92,13 +92,13 @@ def chat():
         # NEW API CALL for OpenAI completions (using completions.create)
         openai_response = openai.completions.create(
             model="gpt-4",  # Or another model if needed
-            messages=messages,
+            prompt=conversation_context,  # Use the full conversation context as the prompt
             max_tokens=150,
             temperature=0.7
         )
 
         # Extract the response content from OpenAI
-        openai_response_text = openai_response['choices'][0]['message']['content'].strip()
+        openai_response_text = openai_response['choices'][0]['text'].strip()  # Updated field
 
         # Use Hugging Face GPT-2 for text generation
         huggingface_response = huggingface_generator(user_message, max_length=100, num_return_sequences=1)[0]['generated_text']
