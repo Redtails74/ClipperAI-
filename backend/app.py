@@ -90,7 +90,7 @@ def chat():
         prompt = f"Assistant: Here's my response:\n{conversation_context}"
 
         # Use OpenAI API with the new interface
-        openai_response = openai.ChatCompletion.create(
+        openai_response = openai.completions.create(
             model="gpt-4",  # Or another model if needed
             messages=[{"role": "user", "content": user_message}],
             max_tokens=150,
