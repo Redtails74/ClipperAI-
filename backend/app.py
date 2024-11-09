@@ -12,7 +12,7 @@ import openai  # OpenAI API client
 class Config:
     MAX_HISTORY = 10
     HUGGINGFACE_MODEL_NAME = 'gpt2'  # Switching to GPT-2 for text generation
-    OPENAI_API_KEY = "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"  # Add your OpenAI key here
+    OPENAI_API_KEY = "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"  # Add your OpenAI key here
     HUGGINGFACE_API_KEY = "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"  # Add your Hugging Face key here
 
 # Set up OpenAI API Key
