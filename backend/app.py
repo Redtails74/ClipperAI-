@@ -85,12 +85,12 @@ def chat():
     try:
         # Build a conversation context with the last few exchanges
         conversation_context = "\n".join([entry for entry in conversation_memory if entry.startswith("user:") or entry.startswith("assistant:")])
-        
+
         # Construct the OpenAI message format based on the conversation context
         messages = [{"role": "user", "content": user_message}]
         
-        # Use OpenAI API with the new interface
-        openai_response = openai.ChatCompletion.create(
+        # NEW API CALL for OpenAI completions (using completions.create)
+        openai_response = openai.completions.create(
             model="gpt-4",  # Or another model if needed
             messages=messages,
             max_tokens=150,
