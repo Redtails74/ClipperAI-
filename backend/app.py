@@ -6,6 +6,8 @@ import os
 from collections import deque
 import re
 import torch
+import asyncio
+from blinker import signal
 
 # Set up Flask app configuration
 class Config:
@@ -23,40 +25,39 @@ logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(
 logger = logging.getLogger(__name__)
 
 # Initialize Flask app
-app = Flask(__name__,
-            static_url_path='/static',
-            static_folder='../static',
-            template_folder='./templates')
+app = Flask(__name__, template_folder='templates')
 CORS(app, resources={r"/api/*": {"origins": "*"}})
 
 # Dictionary to hold models and pipelines
 models = {}
 
-@app.before_first_request
-def load_models_on_first_request():
+async def load_model(model_name, model_path):
+    """Asynchronous model loading."""
+    try:
+        model = AutoModelForCausalLM.from_pretrained(model_path, use_auth_token=Config.HUGGINGFACE_API_KEY)
+        tokenizer = AutoTokenizer.from_pretrained(model_path, use_auth_token=Config.HUGGINGFACE_API_KEY)
+        if tokenizer.pad_token is None:
+            tokenizer.pad_token = tokenizer.eos_token or '<pad>'
+
+        model.eval()
+        if torch.cuda.is_available():
+            model = model.cuda()
+
+        return model, tokenizer
+    except Exception as e:
+        logger.error(f"Error loading {model_name}: {e}")
+        return None, None
+
+@signal('got_first_request')
+def load_models(sender, **extra):
     global models
     if not models:
         try:
+            # Load each model asynchronously
             for model_name, model_path in Config.MODELS.items():
-                model = AutoModelForCausalLM.from_pretrained(
-                    model_path, 
-                    token=Config.HUGGINGFACE_API_KEY
-                )
-                tokenizer = AutoTokenizer.from_pretrained(
-                    model_path, 
-                    token=Config.HUGGINGFACE_API_KEY
-                )
-                if tokenizer.pad_token is None:
-                    tokenizer.pad_token = tokenizer.eos_token or '<pad>'
-                
-                model.eval()
-                if torch.cuda.is_available():
-                    model = model.cuda()
-                
-                models[model_name] = pipeline('text-generation', 
-                                              model=model, 
-                                              tokenizer=tokenizer, 
-                                              device=0 if torch.cuda.is_available() else -1)
+                model, tokenizer = asyncio.run(load_model(model_name, model_path))
+                if model and tokenizer:
+                    models[model_name] = pipeline('text-generation', model=model, tokenizer=tokenizer, device=0 if torch.cuda.is_available() else -1)
             logger.info("All models loaded successfully.")
         except Exception as e:
             logger.error(f"Error loading models: {e}")
@@ -77,7 +78,7 @@ def is_repeating(generated_text, user_message):
     return last_user_input.lower() in generated_response.lower()
 
 @app.route('/api/chat', methods=['POST'])
-def chat():
+async def chat():
     user_message = request.json.get('message', '').strip()
     if not user_message:
         return jsonify({'error': 'No input message provided'}), 400
@@ -89,12 +90,7 @@ def chat():
         for model_name, generator in models.items():
             response = generator(user_message, max_length=100, num_return_sequences=1)[0]['generated_text']
             if is_repeating(response, user_message):
-                for _ in range(5):  # Try generating again up to 5 times if repetition occurs
-                    response = generator(user_message, max_length=100, num_return_sequences=1)[0]['generated_text']
-                    if not is_repeating(response, user_message):
-                        break
-                else:
-                    response = "I'm sorry, I'm having trouble generating a response. Please try again later."
+                response = "I'm sorry, I'm having trouble generating a response. Please try again later."
             
             response = filter_inappropriate_words(response)
             responses[model_name] = response
