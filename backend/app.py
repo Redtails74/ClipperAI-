@@ -11,7 +11,7 @@ import openai  # OpenAI API client
 # Set up Flask app configuration
 class Config:
     MAX_HISTORY = 10
-    HUGGINGFACE_MODEL_NAME = 'distilbert-base-uncased'  # Use your model of choice
+    HUGGINGFACE_MODEL_NAME = 'gpt2'  # Switching to GPT-2 for text generation
     OPENAI_API_KEY = "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"  # Add your OpenAI key here
     HUGGINGFACE_API_KEY = "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"  # Add your Hugging Face key here
 
@@ -38,7 +38,7 @@ def load_models_on_first_request():
     global huggingface_model, huggingface_tokenizer, huggingface_generator
     if huggingface_model is None:  # Check if model is already loaded to avoid reloading
         try:
-            # Initialize Hugging Face model and tokenizer for sequence classification (DistilBERT)
+            # Initialize Hugging Face model and tokenizer for GPT-2
             huggingface_model = AutoModelForCausalLM.from_pretrained(Config.HUGGINGFACE_MODEL_NAME)
             huggingface_tokenizer = AutoTokenizer.from_pretrained(Config.HUGGINGFACE_MODEL_NAME)
             
@@ -50,7 +50,7 @@ def load_models_on_first_request():
             if torch.cuda.is_available():
                 huggingface_model = huggingface_model.cuda()
 
-            # For Hugging Face, if using text generation, you could replace with a different model, e.g., GPT-2.
+            # Set up Hugging Face's GPT-2 pipeline for text generation
             huggingface_generator = pipeline('text-generation', model=huggingface_model, tokenizer=huggingface_tokenizer, device=0 if torch.cuda.is_available() else -1)
 
             logger.info(f"Hugging Face model and tokenizer loaded successfully: {Config.HUGGINGFACE_MODEL_NAME}")
@@ -91,51 +91,36 @@ def chat():
 
         # Use OpenAI API with the new interface
         openai_response = openai.ChatCompletion.create(
-            model="gpt-4",  # Use the appropriate model
+            model="gpt-4",  # Or another model if needed
             messages=[{"role": "user", "content": user_message}],
             max_tokens=150,
             temperature=0.7
         )
         openai_response_text = openai_response['choices'][0]['message']['content'].strip()
 
-        # Hugging Face's DistilBERT (Masked LM) cannot generate text directly like GPT-2 or GPT-3.
-        # If you need text generation, consider using GPT-2 from Hugging Face.
-        # But for now, let's use a masked prediction with Hugging Face.
-        huggingface_inputs = huggingface_tokenizer(user_message, return_tensors='pt', truncation=True, max_length=512, padding=True)
-        if torch.cuda.is_available():
-            huggingface_inputs = {key: value.cuda() for key, value in huggingface_inputs.items()}
-
-        with torch.no_grad():
-            huggingface_outputs = huggingface_model(**huggingface_inputs)
-        
-        # Get prediction for the masked token
-        predicted_token = huggingface_tokenizer.decode(huggingface_outputs.logits.argmax(dim=-1)[0], skip_special_tokens=True)
-
-        # Combine the responses from OpenAI and Hugging Face (DistilBERT)
-        huggingface_response_text = f"DistilBERT's masked prediction: {predicted_token}"
+        # Use Hugging Face GPT-2 for text generation
+        huggingface_response = huggingface_generator(user_message, max_length=100, num_return_sequences=1)[0]['generated_text']
 
         # Retry generating response if repetition is detected
-        if is_repeating(huggingface_response_text, user_message):
+        if is_repeating(huggingface_response, user_message):
             for _ in range(5):  # Try generating again up to 5 times if repetition occurs
-                huggingface_outputs = huggingface_model(**huggingface_inputs)
-                predicted_token = huggingface_tokenizer.decode(huggingface_outputs.logits.argmax(dim=-1)[0], skip_special_tokens=True)
-                huggingface_response_text = f"DistilBERT's masked prediction: {predicted_token}"
-                if not is_repeating(huggingface_response_text, user_message):
+                huggingface_response = huggingface_generator(user_message, max_length=100, num_return_sequences=1)[0]['generated_text']
+                if not is_repeating(huggingface_response, user_message):
                     break
             else:
-                huggingface_response_text = "I'm sorry, I'm having trouble generating a response. Please try again later."
+                huggingface_response = "I'm sorry, I'm having trouble generating a response. Please try again later."
 
         # Filter inappropriate content from both models' responses
         openai_response_text = filter_inappropriate_words(openai_response_text)
-        huggingface_response_text = filter_inappropriate_words(huggingface_response_text)
+        huggingface_response = filter_inappropriate_words(huggingface_response)
         
         # Append both responses to conversation history
         conversation_memory.append(f"openai: {openai_response_text}")
-        conversation_memory.append(f"huggingface: {huggingface_response_text}")
+        conversation_memory.append(f"huggingface: {huggingface_response}")
 
         return jsonify({
             'openai_response': openai_response_text,
-            'huggingface_response': huggingface_response_text,
+            'huggingface_response': huggingface_response,
             'conversation': list(conversation_memory)
         })
 
