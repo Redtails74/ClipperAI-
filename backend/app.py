@@ -86,16 +86,18 @@ def chat():
         # Build a conversation context with the last few exchanges
         conversation_context = "\n".join([entry for entry in conversation_memory if entry.startswith("user:") or entry.startswith("assistant:")])
         
-        # Construct prompt based on the conversation context
-        prompt = f"Assistant: Here's my response:\n{conversation_context}"
-
+        # Construct the OpenAI message format based on the conversation context
+        messages = [{"role": "user", "content": user_message}]
+        
         # Use OpenAI API with the new interface
-        openai_response = openai.completions.create(
+        openai_response = openai.ChatCompletion.create(
             model="gpt-4",  # Or another model if needed
-            messages=[{"role": "user", "content": user_message}],
+            messages=messages,
             max_tokens=150,
             temperature=0.7
         )
+
+        # Extract the response content from OpenAI
         openai_response_text = openai_response['choices'][0]['message']['content'].strip()
 
         # Use Hugging Face GPT-2 for text generation
