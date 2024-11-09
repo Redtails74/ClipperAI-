@@ -48,7 +48,9 @@ async def load_model(model_name, model_path):
         logger.error(f"Error loading {model_name}: {e}")
         return None, None
 
-@signal('got_first_request')
+got_first_request = signal('got_first_request')
+
+@got_first_request.connect
 def load_models(sender, **extra):
     global models
     if not models:
@@ -89,18 +91,31 @@ async def chat():
         responses = {}
         for model_name, generator in models.items():
             response = generator(user_message, max_length=100, num_return_sequences=1)[0]['generated_text']
-            if is_repeating(response, user_message):
-                response = "I'm sorry, I'm having trouble generating a response. Please try again later."
             
+            # Check for repetition and regenerate response if necessary
+            if is_repeating(response, user_message):
+                for _ in range(5):  # Try generating again up to 5 times if repetition occurs
+                    response = generator(user_message, max_length=100, num_return_sequences=1)[0]['generated_text']
+                    if not is_repeating(response, user_message):
+                        break
+                else:
+                    response = "I'm sorry, I'm having trouble generating a response. Please try again later."
+            
+            # Filter inappropriate content from the response
             response = filter_inappropriate_words(response)
+            
+            # Store the response in the dictionary
             responses[model_name] = response
+            
+            # Append the response to the conversation history
             conversation_memory.append(f"{model_name}: {response}")
         
+        # Return the responses from all models and the conversation history
         return jsonify({
             'responses': responses,
             'conversation': list(conversation_memory)
         })
-
+    
     except Exception as e:
         logger.error(f"Error during chat processing: {e}")
         return jsonify({'error': 'Internal server error'}), 500
