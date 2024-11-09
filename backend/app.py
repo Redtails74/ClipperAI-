@@ -11,12 +11,9 @@ from dotenv import load_dotenv
 # Load environment variables from .env file
 load_dotenv()
 
-# Configuration
 class Config:
     MAX_HISTORY = 10
-    # Using a smaller model
-    MODEL_NAME = 'openchat/openchat_3.5'
-    # API key might not be necessary for all models, but keeping for consistency
+    MODEL_NAME = 'distilbert-base-uncased'
     API_KEY = os.getenv('HUGGINGFACE_API_KEY', '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')
 
 # Setting up logger
@@ -34,15 +31,13 @@ model = None
 tokenizer = None
 generator = None
 
-# Use before_request to load model on first request
 @app.before_request
 def load_model_on_first_request():
     global model, tokenizer, generator
     if model is None:  # Check if model is already loaded to avoid reloading
         try:
-            # Load the model and tokenizer with the API key
-            model = AutoModelForCausalLM.from_pretrained(Config.MODEL_NAME, token=Config.API_KEY)
-            tokenizer = AutoTokenizer.from_pretrained(Config.MODEL_NAME, token=Config.API_KEY)
+            model = AutoModelForCausalLM.from_pretrained(Config.MODEL_NAME)
+            tokenizer = AutoTokenizer.from_pretrained(Config.MODEL_NAME)
             
             # Ensure pad_token is set
             if tokenizer.pad_token is None:
@@ -51,9 +46,6 @@ def load_model_on_first_request():
             model.eval()  # Set model to evaluation mode
             if torch.cuda.is_available():
                 model = model.cuda()
-
-            # If the model supports it, you can also use quantization to reduce memory usage
-            # model = model.half()  # This would use half-precision (float16) for the model parameters
 
             # Initialize the text generation pipeline
             generator = pipeline('text-generation', model=model, tokenizer=tokenizer, device=0 if torch.cuda.is_available() else -1)
