@@ -67,9 +67,9 @@ def is_repeating(generated_text, user_message):
     generated_response = generated_text.split('\n')[-1].strip()
     return last_user_input.lower() in generated_response.lower()
 
-@app.before_first_request
-def load_models():
-    """Load models on the first request."""
+# Instead of @app.before_first_request, initialize models when the app starts or in an init function
+def initialize_app():
+    """Initialize application by loading models."""
     global models
     if not models:
         try:
@@ -82,6 +82,9 @@ def load_models():
         except Exception as e:
             logger.error(f"Error loading models: {e}")
             raise
+
+# Call the initialization function when the app is created or here if running as script
+initialize_app()
 
 @app.route('/api/chat', methods=['POST'])
 def chat():
