@@ -135,7 +135,8 @@
 
                     // Optionally, show the full conversation history
                     data.conversation.forEach(msg => {
-                        updateChat(msg.split(':')[0], msg.split(':')[1].trim(), msg.startsWith('user') ? 'user-message' : 'ai-message');
+                        const [speaker, message] = msg.split(":", 2);
+                        updateChat(speaker.trim(), message.trim(), speaker.includes('user') ? 'user-message' : 'ai-message');
                     });
 
                 } else {
@@ -150,7 +151,10 @@
 
         // Helper function to update the chat window with messages
         function updateChat(speaker, message, className) {
-            chatDiv.innerHTML += `<div class="${className}"><strong>${speaker}:</strong> ${message}</div>`;
+            const messageDiv = document.createElement('div');
+            messageDiv.className = className;
+            messageDiv.innerHTML = `<strong>${speaker}:</strong> ${message}`;
+            chatDiv.appendChild(messageDiv);
             chatDiv.scrollTop = chatDiv.scrollHeight;  // Scroll to the bottom
         }
 
