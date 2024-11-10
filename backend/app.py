@@ -9,7 +9,7 @@ import torch
 
 class Config:
     MAX_HISTORY = 10
-    MODEL_PATH = 'google/flan-t5-large'  # Change to FLAN-T5 model
+    MODEL_PATH = 'google/flan-t5-large'  # Using FLAN-T5 model
     HUGGINGFACE_API_KEY = os.environ.get("HUGGINGFACE_API_KEY", "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")
 
 # Configuration
@@ -89,18 +89,37 @@ def regenerate_response(user_message):
         attention_mask=attention_mask,
         max_length=150,
         num_return_sequences=1,
-        temperature=random.uniform(0.7, 1.2),
-        top_p=random.uniform(0.8, 0.95),
-        top_k=random.randint(30, 70),
+        temperature=0.8,  # More deterministic
+        top_p=0.9,        # Nucleus sampling
+        top_k=50,         # Top-k sampling
     )
 
     return tokenizer.decode(result[0], skip_special_tokens=True)
 
 def generate_response(user_message):
-    """Generate a response from FLAN-T5."""
-    pipeline = model_info['pipeline']
-    response = pipeline(user_message, max_length=150)[0]['generated_text']
-    return response
+    """Generate a response from FLAN-T5 with improvements for coherence."""
+    try:
+        pipeline = model_info['pipeline']
+        
+        # Adjust the prompt to encourage more logical responses
+        prompt = f"Answer the following question logically and coherently: {user_message}"
+        response = pipeline(prompt, max_length=150)[0]['generated_text']
+
+        # Handle cases where the model might produce suboptimal responses like "Loading..." or empty responses
+        if response.strip().lower() == "loading..." or not response.strip():
+            logger.warning(f"Model returned an empty or loading response: {response}")
+            response = "I'm having trouble generating a response. Please try again later."
+        
+        # Ensure response coherence by fixing minor inconsistencies or unexpected responses
+        response = response.strip()
+
+        # Optional: Further filtering to remove unwanted phrases or characters
+        response = response.replace("badword1", "[REDACTED]").replace("badword2", "[REDACTED]")
+
+        return response
+    except Exception as e:
+        logger.error(f"Error generating response: {e}")
+        return "I'm having trouble generating a response. Please try again later."
 
 @app.route('/api/chat', methods=['POST'])
 def chat():
@@ -119,9 +138,6 @@ def chat():
         previous_responses = [msg.split(": ")[1].strip() for msg in list(g.conversation_memory)[-5:]]
         if is_repeating(response, user_message, previous_responses):
             response = regenerate_response(user_message)
-
-        # Simplified response filtering (customize as needed)
-        response = response.replace("badword1", "[REDACTED]").replace("badword2", "[REDACTED]")
 
         g.conversation_memory.append(f"AI: {response}")
 
