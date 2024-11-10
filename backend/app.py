@@ -24,8 +24,15 @@ class Config:
 logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
 logger = logging.getLogger(__name__)
 
-# Initialize Flask app
-app = Flask(__name__, template_folder='templates')
+# Initialize Flask app with template folder, static folder, and CORS configuration
+app = Flask(
+    __name__,
+    static_url_path='/static',
+    static_folder='../static',
+    template_folder='./templates'
+)
+
+# Enable CORS for the API routes
 CORS(app, resources={r"/api/*": {"origins": "*"}})
 
 # Dictionary to hold models and pipelines
