@@ -33,7 +33,7 @@ app = Flask(
 # Enable CORS for the API routes
 CORS(app, resources={r"/api/*": {"origins": "*"}})
 
-# Dictionary to hold models and pipelines
+# Dictionary to hold models, tokenizers, and pipelines
 models = {}
 
 def load_model(model_name, model_path):
@@ -81,7 +81,12 @@ def initialize_app():
                 logger.info(f"Loading model pipeline for: {model_name}")
                 model, tokenizer = load_model(model_name, model_path)
                 if model and tokenizer:
-                    models[model_name] = pipeline('text-generation', model=model, tokenizer=tokenizer, device=0 if torch.cuda.is_available() else -1)
+                    # Store both model and tokenizer separately
+                    models[model_name] = {
+                        'model': model,
+                        'tokenizer': tokenizer,
+                        'pipeline': pipeline('text-generation', model=model, tokenizer=tokenizer, device=0 if torch.cuda.is_available() else -1)
+                    }
                     logger.info(f"Model pipeline for {model_name} initialized successfully.")
                 else:
                     logger.error(f"Failed to load model {model_name}.")
@@ -104,12 +109,14 @@ def chat():
     
     try:
         responses = {}
-        for model_name, generator in models.items():
+        for model_name, model_data in models.items():
             logger.info(f"Generating response with model: {model_name}")
             
-            # Get the tokenizer for the model
-            tokenizer = models[model_name].tokenizer  # This comes from the pipeline object
-            
+            # Extract model, tokenizer, and pipeline from the model_data dictionary
+            model = model_data['model']
+            tokenizer = model_data['tokenizer']
+            generator = model_data['pipeline']
+
             # Tokenize the user input and ensure truncation
             inputs = tokenizer(user_message, return_tensors='pt', truncation=True, padding=True, max_length=512)
             logger.info(f"Tokenized input: {inputs}")
@@ -124,7 +131,7 @@ def chat():
                 input_ids = inputs['input_ids'].cuda() if torch.cuda.is_available() else inputs['input_ids']
                 attention_mask = inputs['attention_mask'].cuda() if torch.cuda.is_available() else inputs['attention_mask']
 
-                result = generator.model.generate(
+                result = model.generate(
                     input_ids,
                     attention_mask=attention_mask,  # Pass attention mask explicitly
                     max_length=150,
@@ -175,12 +182,4 @@ def chat():
 
 def filter_inappropriate_words(text):
     """Filters inappropriate words from the generated text."""
-    bad_words = ["badword1", "badword2"]  # Replace with actual list of bad words
-    for word in bad_words:
-        text = re.sub(r'\b' + re.escape(word) + r'\b', lambda m: '*' * len(m.group()), text, flags=re.IGNORECASE)
-    return text
-
-if __name__ == '__main__':
-    port = int(os.environ.get('PORT', 5000))
-    logger.info(f"Starting app on port {port}")
-    app.run(debug=False, port=port, host='0.0.0.0')
+    bad_words = ["badword1", "badword2"]  # Replace wi
