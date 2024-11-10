@@ -16,7 +16,7 @@ class Config:
         'FlanT5': 'google/flan-t5-small',
         # Add more models here if you want
     }
-    HUGGINGFACE_API_KEY = "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"  # Your Hugging Face API key
+    HUGGINGFACE_API_KEY = "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"  # Add your Hugging Face key here
 
 # Setting up logger
 logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
@@ -104,8 +104,10 @@ def chat():
         for model_name, generator in models.items():
             logger.info(f"Generating response with model: {model_name}")
             
-            # Tokenize and ensure truncation
-            tokenizer = generator.model.config.tokenizer
+            # Get the tokenizer for the model (don't use model.config)
+            tokenizer = models[model_name].tokenizer  # This comes from the pipeline object
+            
+            # Tokenize the user input and ensure truncation
             inputs = tokenizer(user_message, return_tensors='pt', truncation=True, padding=True, max_length=512)
             logger.info(f"Tokenized input: {inputs}")
 
