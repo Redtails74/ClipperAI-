@@ -81,8 +81,11 @@ def chat():
         # Generate a response based on the user's message
         response = generate_response(user_message)
         
-        # Return the response as JSON
-        return jsonify({"response": response})
+        # Send the conversation memory back with the response
+        return jsonify({
+            "response": response,
+            "conversation": list(g.conversation_memory)
+        })
     except Exception as e:
         logger.error(f"Error in /api/chat: {e}")
         return jsonify({"error": "An error occurred while processing the request."}), 500
