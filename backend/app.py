@@ -1,6 +1,6 @@
 from flask import Flask, request, jsonify, render_template
 from flask_cors import CORS
-from transformers import AutoModelForCausalLM, AutoTokenizer, pipeline
+from transformers import AutoModelForCausalLM, AutoModelForSeq2SeqLM, AutoTokenizer, pipeline
 import logging
 import os
 from collections import deque
@@ -40,7 +40,13 @@ def load_model(model_name, model_path):
     """Load model and tokenizer synchronously."""
     try:
         logger.info(f"Loading model {model_name} from {model_path}...")
-        model = AutoModelForCausalLM.from_pretrained(model_path, use_auth_token=Config.HUGGINGFACE_API_KEY)
+        
+        # Check if model is for causal LM or seq2seq LM and load accordingly
+        if 't5' in model_path.lower():
+            model = AutoModelForSeq2SeqLM.from_pretrained(model_path, use_auth_token=Config.HUGGINGFACE_API_KEY)
+        else:
+            model = AutoModelForCausalLM.from_pretrained(model_path, use_auth_token=Config.HUGGINGFACE_API_KEY)
+        
         tokenizer = AutoTokenizer.from_pretrained(model_path, use_auth_token=Config.HUGGINGFACE_API_KEY)
         
         if tokenizer.pad_token is None:
@@ -182,4 +188,12 @@ def chat():
 
 def filter_inappropriate_words(text):
     """Filters inappropriate words from the generated text."""
-    bad_words = ["badword1", "badword2"]  # Replace wi
+    bad_words = ["badword1", "badword2"]  # Replace with actual list of bad words
+    for word in bad_words:
+        text = re.sub(r'\b' + re.escape(word) + r'\b', lambda m: '*' * len(m.group()), text, flags=re.IGNORECASE)
+    return text
+
+if __name__ == '__main__':
+    port = int(os.environ.get('PORT', 5000))
+    logger.info(f"Starting app on port {port}")
+    app.run(debug=False, port=port, host='0.0.0.0')
