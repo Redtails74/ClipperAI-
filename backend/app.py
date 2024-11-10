@@ -5,6 +5,7 @@ import logging
 import os
 from collections import deque
 import torch
+import re  # Add this import for regular expressions
 
 # Set up Flask app configuration
 class Config:
