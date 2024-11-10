@@ -44,7 +44,7 @@ def load_model(model_name, model_path):
         tokenizer = AutoTokenizer.from_pretrained(model_path, use_auth_token=Config.HUGGINGFACE_API_KEY)
         
         if tokenizer.pad_token is None:
-            tokenizer.pad_token = tokenizer.eos_token or '<pad>'
+            tokenizer.pad_token = tokenizer.eos_token
 
         model.eval()
         if torch.cuda.is_available():
@@ -113,13 +113,25 @@ def chat():
             # Tokenize the user input and ensure truncation
             inputs = tokenizer(user_message, return_tensors='pt', truncation=True, padding=True, max_length=512)
             logger.info(f"Tokenized input: {inputs}")
-            
-            # Generate the response
+
+            # Ensure pad_token_id is set (in case it's missing)
+            if tokenizer.pad_token is None:
+                tokenizer.pad_token = tokenizer.eos_token
+
+            # Generate the response with attention mask and pad_token_id explicitly set
             with torch.no_grad():
                 # Ensure CUDA device handling is correct
                 input_ids = inputs['input_ids'].cuda() if torch.cuda.is_available() else inputs['input_ids']
-                result = generator.model.generate(input_ids, max_length=150, num_return_sequences=1)
-            
+                attention_mask = inputs['attention_mask'].cuda() if torch.cuda.is_available() else inputs['attention_mask']
+
+                result = generator.model.generate(
+                    input_ids,
+                    attention_mask=attention_mask,  # Pass attention mask explicitly
+                    max_length=150,
+                    num_return_sequences=1,
+                    pad_token_id=tokenizer.pad_token_id  # Use pad_token_id explicitly
+                )
+
             # Decode the generated response
             response = tokenizer.decode(result[0], skip_special_tokens=True)
             logger.info(f"Generated response: {response}")
