@@ -43,7 +43,7 @@
             width: 100%;
             max-height: 300px;
             overflow-y: auto;
-            margin-bottom: 10px;
+            margin-bottom: 20px; /* Increased margin */
             background: #f7f7f7;
             border-radius: 4px;
         }
@@ -73,21 +73,21 @@
 
         /* Textarea styles */
         textarea {
-            flex-grow: 1; /* Allows the textarea to grow */
+            flex-grow: 1;
             height: 40px;
-            margin-right: 10px; /* Space between input and button */
+            margin-right: 10px;
             padding: 10px;
             border-radius: 4px;
             border: 1px solid #ccc;
             font-size: 16px;
             resize: none;
-            width: 80%; /* Make the input narrower */
+            width: 80%; /* Narrow input box */
         }
 
         /* Button styles (send button) */
         button {
-            padding: 10px;
-            background-color: #ccc;  /* Grey color */
+            padding: 12px;  /* Slightly larger padding for the button */
+            background-color: #ccc;
             color: white;
             border: none;
             border-radius: 50%;
@@ -98,18 +98,24 @@
             justify-content: center;
             align-items: center;
             transition: background-color 0.3s, transform 0.2s;
+            box-shadow: 0px 2px 5px rgba(0, 0, 0, 0.2);  /* Slight shadow for depth */
         }
 
         button:hover {
-            background-color: #888;  /* Darker grey when hovering */
+            background-color: #888;
             transform: scale(1.1);
         }
 
+        button:active {
+            transform: scale(1); /* Return to normal size when clicked */
+        }
+
         button svg {
-            width: 20px;
-            height: 20px;
+            width: 22px;  /* Increased size of the arrow icon */
+            height: 22px;
             fill: white;
         }
+
     </style>
 </head>
 <body>
@@ -142,56 +148,4 @@
             updateChat('AI', 'Loading...', 'loading');
 
             try {
-                const response = await fetch('/api/chat', {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json'
-                    },
-                    body: JSON.stringify({ message })
-                });
-
-                if (response.ok) {
-                    const data = await response.json();
-
-                    // Display responses from each model
-                    for (const model in data.responses) {
-                        updateChat(model, data.responses[model], 'ai-message');
-                    }
-
-                    // Optionally, show the full conversation history
-                    data.conversation.forEach(msg => {
-                        const [speaker, message] = msg.split(":", 2);
-                        updateChat(speaker.trim(), message.trim(), speaker.includes('user') ? 'user-message' : 'ai-message');
-                    });
-
-                } else {
-                    updateChat('Error', response.statusText, 'ai-message');
-                }
-            } catch (error) {
-                updateChat('Error', error.message, 'ai-message');
-            }
-
-            input.value = '';
-        }
-
-        // Helper function to update the chat window with messages
-        function updateChat(speaker, message, className) {
-            const messageDiv = document.createElement('div');
-            messageDiv.className = className;
-            messageDiv.innerHTML = `<strong>${speaker}:</strong> ${message}`;
-            chatDiv.appendChild(messageDiv);
-            chatDiv.scrollTop = chatDiv.scrollHeight;  // Scroll to the bottom
-        }
-
-        sendButton.addEventListener('click', sendMessage);
-
-        // Handle "Enter" key to send message
-        input.addEventListener('keypress', function(e) {
-            if (e.key === 'Enter' && !e.shiftKey) {
-                sendMessage();
-                e.preventDefault(); 
-            }
-        });
-    </script>
-</body>
-</html>
+                const response = await fetch('/api/ch
