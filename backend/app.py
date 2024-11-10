@@ -70,10 +70,6 @@ def home():
     """Serve the homepage."""
     return render_template('index.html')
 
-def is_repeating(response, user_message, previous_responses):
-    """Check if the generated response is too similar to previous responses."""
-    return response in previous_responses or response == user_message
-
 def regenerate_response(user_message, use_greedy=True):
     """Try regenerating the response in case of repetition with adjusted parameters."""
     model = model_info['model']
@@ -131,8 +127,11 @@ def generate_response(user_message, use_greedy=True):
         # Ensure response coherence by trimming and removing problematic patterns
         response = response.strip()
 
-        # Optional: Store the response in conversation memory (replacing "Bot" with "Clipper")
-        g.conversation_memory.append(f"User: {user_message}")
+        # Store only the unique user message (no duplicates)
+        if len(g.conversation_memory) == 0 or g.conversation_memory[-2].split(": ")[1].strip() != user_message.strip():
+            g.conversation_memory.append(f"User: {user_message}")
+
+        # Store Clipper's response
         g.conversation_memory.append(f"Clipper: {response}")
 
         return response
