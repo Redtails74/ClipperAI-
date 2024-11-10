@@ -1,7 +1,8 @@
 from flask import Flask, request, jsonify, render_template
 from flask_cors import CORS
-from transformers import AutoModelForCausalLM, AutoTokenizer, pipeline, AutoModelForSeq2SeqLM
+from transformers import AutoModelForCausalLM, AutoModelForSeq2SeqLM, AutoTokenizer, pipeline
 import logging
+import os
 import torch
 from collections import deque
 
@@ -9,12 +10,11 @@ from collections import deque
 class Config:
     MAX_HISTORY = 10
     MODELS = {
-        'grok1': 'allenai/grok',  # Attempt to load Grok model
+        'grok1': 'allenai/grok',  # Assuming this is the correct path for Grok
         'DialoGPT': 'microsoft/DialoGPT-small',
         'FlanT5': 'google/flan-t5-small',
-        # Add more models here if you want
     }
-    HUGGINGFACE_API_KEY = "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"  # Add your Hugging Face key here
+    HUGGINGFACE_API_KEY = "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"  # Replace with your Hugging Face API key
 
 # Setting up logger
 logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
@@ -42,10 +42,8 @@ def load_model(model_name, model_path):
             model = AutoModelForSeq2SeqLM.from_pretrained(model_path, use_auth_token=Config.HUGGINGFACE_API_KEY)
         else:
             model = AutoModelForCausalLM.from_pretrained(model_path, use_auth_token=Config.HUGGINGFACE_API_KEY)
-        
         tokenizer = AutoTokenizer.from_pretrained(model_path, use_auth_token=Config.HUGGINGFACE_API_KEY)
-        
-        # Ensure pad token is set if not present
+
         if tokenizer.pad_token is None:
             tokenizer.pad_token = tokenizer.eos_token
 
@@ -71,6 +69,34 @@ def home():
     """Serve the homepage."""
     return render_template('index.html')
 
+def is_repeating(response, user_message, previous_responses):
+    """Check if the generated response is too similar to previous responses."""
+    return response in previous_responses or response == user_message
+
+def regenerate_response(model, user_message, tokenizer, model_name):
+    """Try regenerating the response in case of repetition."""
+    logger.info(f"Regenerating response for {model_name}...")
+
+    # Tokenize the input
+    inputs = tokenizer(user_message, return_tensors='pt', truncation=True, padding=True, max_length=512)
+    input_ids = inputs['input_ids'].cuda() if torch.cuda.is_available() else inputs['input_ids']
+    attention_mask = inputs['attention_mask'].cuda() if torch.cuda.is_available() else inputs['attention_mask']
+
+    # Set diverse parameters for regeneration (e.g., temperature, top_p)
+    result = model.generate(
+        input_ids,
+        attention_mask=attention_mask,
+        max_length=150,
+        num_return_sequences=1,
+        pad_token_id=tokenizer.pad_token_id,
+        temperature=0.9,  # Higher temperature for more randomness
+        top_p=0.9,        # Top-p (nucleus sampling) to get more diverse responses
+        top_k=50,         # Restrict token sampling to top-k
+    )
+
+    response = tokenizer.decode(result[0], skip_special_tokens=True)
+    return response
+
 # Initialize application by loading models
 def initialize_app():
     """Initialize application by loading models."""
@@ -83,18 +109,11 @@ def initialize_app():
                 model, tokenizer = load_model(model_name, model_path)
                 if model and tokenizer:
                     # Store both model and tokenizer separately
-                    if model_name == 'FlanT5':
-                        models[model_name] = {
-                            'model': model,
-                            'tokenizer': tokenizer,
-                            'pipeline': pipeline('text2text-generation', model=model, tokenizer=tokenizer, device=0 if torch.cuda.is_available() else -1)
-                        }
-                    else:
-                        models[model_name] = {
-                            'model': model,
-                            'tokenizer': tokenizer,
-                            'pipeline': pipeline('text-generation', model=model, tokenizer=tokenizer, device=0 if torch.cuda.is_available() else -1)
-                        }
+                    models[model_name] = {
+                        'model': model,
+                        'tokenizer': tokenizer,
+                        'pipeline': pipeline('text-generation', model=model, tokenizer=tokenizer, device=0 if torch.cuda.is_available() else -1)
+                    }
                     logger.info(f"Model pipeline for {model_name} initialized successfully.")
                 else:
                     logger.error(f"Failed to load model {model_name}.")
@@ -129,7 +148,7 @@ def chat():
             inputs = tokenizer(user_message, return_tensors='pt', truncation=True, padding=True, max_length=512)
             logger.info(f"Tokenized input: {inputs}")
 
-            # Generate the response with temperature and top_p for better variability
+            # Generate the response
             with torch.no_grad():
                 input_ids = inputs['input_ids'].cuda() if torch.cuda.is_available() else inputs['input_ids']
                 attention_mask = inputs['attention_mask'].cuda() if torch.cuda.is_available() else inputs['attention_mask']
@@ -140,9 +159,9 @@ def chat():
                     max_length=150,
                     num_return_sequences=1,
                     pad_token_id=tokenizer.pad_token_id,
-                    temperature=0.7,  # More randomness
-                    top_p=0.9,  # Use nucleus sampling
-                    top_k=50  # Further restrict token sampling
+                    temperature=0.7,
+                    top_p=0.9,
+                    top_k=50
                 )
 
             # Decode the generated response
@@ -152,15 +171,7 @@ def chat():
             # Check for repetition and regenerate response if necessary
             previous_responses = [msg.split(": ")[1].strip() for msg in list(conversation_memory)[-5:]]  # Get the last 5 responses
             if is_repeating(response, user_message, previous_responses):
-                for _ in range(5):  # Try regenerating up to 5 times
-                    logger.info(f"Repeating detected for {model_name}, regenerating response...")
-                    result = generator(user_message, max_length=150, num_return_sequences=1)
-                    if result:
-                        response = result[0]['generated_text']
-                    if not is_repeating(response, user_message, previous_responses):
-                        break
-                else:
-                    response = "I'm sorry, I'm having trouble generating a response. Please try again later."
+                response = regenerate_response(model, user_message, tokenizer, model_name)
             
             # Filter inappropriate content from the response
             response = filter_inappropriate_words(response)
@@ -181,16 +192,13 @@ def chat():
         logger.error(f"Error during chat processing: {e}")
         return jsonify({'error': 'Internal server error'}), 500
 
-def is_repeating(response, user_message, previous_responses):
-    """Check if the generated response is too similar to previous responses."""
-    return response in previous_responses or response == user_message
-
 def filter_inappropriate_words(text):
     """Filters inappropriate words from the generated text."""
-    bad_words = ["badword1", "badword2"]  # Replace with actual bad words to filter
+    bad_words = ["badword1", "badword2"]  # Replace with your actual list of bad words
     for word in bad_words:
-        text = text.replace(word, "[REDACTED]")
+        text = text.replace(word, "***")
     return text
 
+# Running the app
 if __name__ == '__main__':
     app.run(debug=True)
