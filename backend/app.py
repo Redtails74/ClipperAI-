@@ -1,4 +1,3 @@
-import random
 import os
 from flask import Flask, request, jsonify, render_template, g
 from flask_cors import CORS
@@ -117,42 +116,14 @@ def generate_response(user_message):
         # Ensure response coherence by trimming and removing problematic patterns
         response = response.strip()
 
-        # Optional: Further filtering to remove unwanted phrases or characters
-        response = response.replace("badword1", "[REDACTED]").replace("badword2", "[REDACTED]")
+        # Optional: Store the response in conversation memory
+        g.conversation_memory.append(f"User: {user_message}")
+        g.conversation_memory.append(f"Bot: {response}")
 
         return response
     except Exception as e:
         logger.error(f"Error generating response: {e}")
-        return "I'm having trouble generating a response. Please try again later."
-
-@app.route('/api/chat', methods=['POST'])
-def chat():
-    """Handle chat requests."""
-    user_message = request.json.get('message', '').strip()
-    if not user_message:
-        return jsonify({'error': 'No input message provided'}), 400
-
-    g.conversation_memory.append(f"user: {user_message}")
-
-    try:
-        # Generate initial response using FLAN-T5
-        response = generate_response(user_message)
-
-        # Check for repeated responses in the conversation history
-        previous_responses = [msg.split(": ")[1].strip() for msg in list(g.conversation_memory)[-5:]]
-        if is_repeating(response, user_message, previous_responses):
-            response = regenerate_response(user_message)
-
-        g.conversation_memory.append(f"AI: {response}")
-
-        return jsonify({
-            'response': response,
-            'conversation': list(g.conversation_memory)
-        })
-    
-    except Exception as e:
-        logger.error(f"Error during chat processing: {e}")
-        return jsonify({'error': 'Internal server error'}), 500
+        return "An error occurred while generating the response. Please try again later."
 
 if __name__ == '__main__':
     app.run(debug=True)
