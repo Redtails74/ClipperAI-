@@ -9,7 +9,7 @@ from collections import deque
 class Config:
     MAX_HISTORY = 10
     MODELS = {
-        'grok1': 'allenai/grok',  # Updated Grok model path
+        'grok1': 'allenai/grok',  # Attempt to load Grok model
         'DialoGPT': 'microsoft/DialoGPT-small',
         'FlanT5': 'google/flan-t5-small',
         # Add more models here if you want
@@ -38,12 +38,14 @@ def load_model(model_name, model_path):
     """Load model and tokenizer synchronously."""
     try:
         logger.info(f"Loading model {model_name} from {model_path}...")
-        if model_name == 'FlanT5':
+        if model_name in ['FlanT5', 'grok1']:
             model = AutoModelForSeq2SeqLM.from_pretrained(model_path, use_auth_token=Config.HUGGINGFACE_API_KEY)
         else:
             model = AutoModelForCausalLM.from_pretrained(model_path, use_auth_token=Config.HUGGINGFACE_API_KEY)
+        
         tokenizer = AutoTokenizer.from_pretrained(model_path, use_auth_token=Config.HUGGINGFACE_API_KEY)
         
+        # Ensure pad token is set if not present
         if tokenizer.pad_token is None:
             tokenizer.pad_token = tokenizer.eos_token
 
@@ -55,6 +57,10 @@ def load_model(model_name, model_path):
         return model, tokenizer
     except Exception as e:
         logger.error(f"Error loading {model_name}: {e}")
+        # Try loading a fallback model (e.g., DialoGPT) if Grok fails
+        if model_name == 'grok1':
+            logger.info(f"Falling back to DialoGPT for {model_name}")
+            return load_model("DialoGPT", "microsoft/DialoGPT-small")
         return None, None
 
 # Use deque for efficient memory management of conversation history
@@ -64,15 +70,6 @@ conversation_memory = deque(maxlen=Config.MAX_HISTORY)
 def home():
     """Serve the homepage."""
     return render_template('index.html')
-
-def is_repeating(generated_text, user_message, previous_responses):
-    """Check if the generated text is a repetition of the user's message or past responses."""
-    last_user_input = "user: " + user_message
-    # Check against the last few AI responses as well
-    for past_response in previous_responses:
-        if last_user_input.lower() in past_response.lower() or generated_text.lower() in past_response.lower():
-            return True
-    return False
 
 # Initialize application by loading models
 def initialize_app():
@@ -152,12 +149,6 @@ def chat():
             response = tokenizer.decode(result[0], skip_special_tokens=True)
             logger.info(f"Generated response: {response}")
             
-            # Check if the response is valid
-            if not response or response.strip() == "":
-                logger.error(f"Failed to generate response with model {model_name}")
-                responses[model_name] = "Error generating response."
-                continue
-
             # Check for repetition and regenerate response if necessary
             previous_responses = [msg.split(": ")[1].strip() for msg in list(conversation_memory)[-5:]]  # Get the last 5 responses
             if is_repeating(response, user_message, previous_responses):
@@ -189,6 +180,10 @@ def chat():
     except Exception as e:
         logger.error(f"Error during chat processing: {e}")
         return jsonify({'error': 'Internal server error'}), 500
+
+def is_repeating(response, user_message, previous_responses):
+    """Check if the generated response is too similar to previous responses."""
+    return response in previous_responses or response == user_message
 
 def filter_inappropriate_words(text):
     """Filters inappropriate words from the generated text."""
