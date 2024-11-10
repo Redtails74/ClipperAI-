@@ -1,5 +1,5 @@
-import random
 import os
+import random
 from flask import Flask, request, jsonify, render_template, g
 from flask_cors import CORS
 from transformers import AutoModelForCausalLM, AutoTokenizer, pipeline
@@ -9,7 +9,8 @@ import torch
 
 class Config:
     MAX_HISTORY = 10
-    MODEL_PATH = 'allenai/grok'
+    # Update the MODEL_PATH to the latest Grok model identifier
+    MODEL_PATH = 'xai-org/grok-2'
     HUGGINGFACE_API_KEY = os.environ.get("HUGGINGFACE_API_KEY", "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")
 
 # Configuration
@@ -35,11 +36,12 @@ model_info = {
 }
 
 def load_model():
-    """Load the Grok model and tokenizer."""
+    """Load the Grok-2 model and tokenizer."""
     try:
-        logger.info(f"Loading Grok model from {Config.MODEL_PATH}...")
-        model = AutoModelForCausalLM.from_pretrained(Config.MODEL_PATH, use_auth_token=Config.HUGGINGFACE_API_KEY)
-        tokenizer = AutoTokenizer.from_pretrained(Config.MODEL_PATH, use_auth_token=Config.HUGGINGFACE_API_KEY)
+        logger.info(f"Loading Grok-2 model from {Config.MODEL_PATH}...")
+        # Use the appropriate model class if Grok-2 has a different one; here we assume it's still CausalLM
+        model = AutoModelForCausalLM.from_pretrained(Config.MODEL_PATH, token=Config.HUGGINGFACE_API_KEY)
+        tokenizer = AutoTokenizer.from_pretrained(Config.MODEL_PATH, token=Config.HUGGINGFACE_API_KEY)
         if tokenizer.pad_token is None:
             tokenizer.pad_token = tokenizer.eos_token
 
@@ -50,10 +52,11 @@ def load_model():
         # Create pipeline
         model_info['model'] = model
         model_info['tokenizer'] = tokenizer
+        # Ensure the pipeline is configured for your model's capabilities, here we're using text-generation
         model_info['pipeline'] = pipeline('text-generation', model=model, tokenizer=tokenizer, device=0 if torch.cuda.is_available() else -1)
-        logger.info("Grok model loaded successfully.")
+        logger.info("Grok-2 model loaded successfully.")
     except Exception as e:
-        logger.error(f"Error loading Grok model: {e}")
+        logger.error(f"Error loading Grok-2 model: {e}")
         raise
 
 # Load model when the app starts
@@ -94,7 +97,7 @@ def regenerate_response(user_message):
     return tokenizer.decode(result[0], skip_special_tokens=True)
 
 def generate_response(user_message):
-    """Generate a response from Grok."""
+    """Generate a response from Grok-2."""
     pipeline = model_info['pipeline']
     response = pipeline(user_message, max_length=150)[0]['generated_text']
     return response
