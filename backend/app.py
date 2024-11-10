@@ -1,10 +1,12 @@
 import random
+import string
 from flask import Flask, request, jsonify, render_template
 from flask_cors import CORS
 from transformers import AutoModelForCausalLM, AutoModelForSeq2SeqLM, AutoTokenizer, pipeline
 import logging
-import torch
+import os
 from collections import deque
+import torch
 
 # Set up Flask app configuration
 class Config:
@@ -14,7 +16,7 @@ class Config:
         'DialoGPT': 'microsoft/DialoGPT-small',
         'FlanT5': 'google/flan-t5-small',
     }
-    HUGGINGFACE_API_KEY = "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"  # Replace with your Hugging Face API key
+    HUGGINGFACE_API_KEY = "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"  # Hugging Face API key
 
 # Setting up logger
 logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
@@ -43,7 +45,7 @@ def load_model(model_name, model_path):
         else:
             model = AutoModelForCausalLM.from_pretrained(model_path, use_auth_token=Config.HUGGINGFACE_API_KEY)
         tokenizer = AutoTokenizer.from_pretrained(model_path, use_auth_token=Config.HUGGINGFACE_API_KEY)
-
+        
         if tokenizer.pad_token is None:
             tokenizer.pad_token = tokenizer.eos_token
 
@@ -107,16 +109,15 @@ def regenerate_response(model, user_message, tokenizer, model_name):
     input_ids = inputs['input_ids'].cuda() if torch.cuda.is_available() else inputs['input_ids']
     attention_mask = inputs['attention_mask'].cuda() if torch.cuda.is_available() else inputs['attention_mask']
 
-    # Set diverse parameters for regeneration (e.g., temperature, top_p)
+    # Set diverse parameters for regeneration
     result = model.generate(
         input_ids,
         attention_mask=attention_mask,
         max_length=150,
         num_return_sequences=1,
-        pad_token_id=tokenizer.pad_token_id,
-        temperature=random.uniform(0.7, 1.2),  # Randomize temperature for more variation
-        top_p=random.uniform(0.8, 0.95),       # Randomize top-p for more diversity
-        top_k=random.randint(30, 70),          # Randomize top-k to avoid stuck responses
+        temperature=random.uniform(0.7, 1.2),
+        top_p=random.uniform(0.8, 0.95),
+        top_k=random.randint(30, 70),
     )
 
     response = tokenizer.decode(result[0], skip_special_tokens=True)
@@ -158,7 +159,6 @@ def chat():
                     attention_mask=attention_mask,
                     max_length=150,
                     num_return_sequences=1,
-                    pad_token_id=tokenizer.pad_token_id,
                     temperature=0.7,
                     top_p=0.9,
                     top_k=50
@@ -194,9 +194,10 @@ def chat():
 
 def filter_inappropriate_words(text):
     """Filters inappropriate words from the generated text."""
-    bad_words = ["badword1", "badword2"]  # Replace with your actual list of bad words
+    # Example list, replace with actual bad words
+    bad_words = ["badword1", "badword2"]
     for word in bad_words:
-        text = text.replace(word, "***")
+        text = text.replace(word, "[REDACTED]")
     return text
 
 # Running the app
