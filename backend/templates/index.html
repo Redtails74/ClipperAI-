@@ -79,11 +79,16 @@
         /* Button styles */
         button {
             padding: 10px 20px;
-            background-color: #007bff;
+            background-color: #1da1f2;
             color: white;
             border: none;
-            border-radius: 4px;
+            border-radius: 50%;
+            width: 30px;
+            height: 30px;
             cursor: pointer;
+            display: flex;
+            justify-content: center;
+            align-items: center;
             transition: background-color 0.3s, transform 0.2s;
         }
 
@@ -91,13 +96,25 @@
             background-color: #0056b3;
             transform: scale(1.05);
         }
+
+        button svg {
+            width: 20px;
+            height: 20px;
+            fill: white;
+        }
     </style>
 </head>
 <body>
     <div id="app">
         <img src="{{ request.url_root }}static/Code%20Clipper%20Logo-01.jpg" alt="Clipper Logo" />
-        <textarea id="input" placeholder="Type your message..."></textarea>
-        <button id="send">Send</button>
+        <div class="chat-box">
+            <textarea id="input" placeholder="Type your message..."></textarea>
+            <button id="send">
+                <svg viewBox="0 0 24 24" aria-hidden="true">
+                    <path d="M10 7L8.59 8.41 13.17 13H7v2h6.17l-4.59 4.59L10 17l7-7-7-7z"></path>
+                </svg>
+            </button>
+        </div>
         <div id="chat"></div>
     </div>
     
