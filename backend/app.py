@@ -84,7 +84,7 @@ def regenerate_response(user_message):
     input_ids = inputs['input_ids'].cuda() if torch.cuda.is_available() else inputs['input_ids']
     attention_mask = inputs['attention_mask'].cuda() if torch.cuda.is_available() else inputs['attention_mask']
 
-     result = model.generate(
+    result = model.generate(
         input_ids,
         attention_mask=attention_mask,
         max_length=150,
