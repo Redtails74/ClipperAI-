@@ -6,7 +6,6 @@ import os
 from collections import deque
 import re
 import torch
-import asyncio
 
 # Set up Flask app configuration
 class Config:
@@ -37,8 +36,8 @@ CORS(app, resources={r"/api/*": {"origins": "*"}})
 # Dictionary to hold models and pipelines
 models = {}
 
-async def load_model(model_name, model_path):
-    """Asynchronous model loading."""
+def load_model(model_name, model_path):
+    """Load model and tokenizer synchronously."""
     try:
         model = AutoModelForCausalLM.from_pretrained(model_path, use_auth_token=Config.HUGGINGFACE_API_KEY)
         tokenizer = AutoTokenizer.from_pretrained(model_path, use_auth_token=Config.HUGGINGFACE_API_KEY)
@@ -74,9 +73,9 @@ def load_models():
     global models
     if not models:
         try:
-            # Load each model asynchronously using await
+            # Load each model synchronously
             for model_name, model_path in Config.MODELS.items():
-                model, tokenizer = asyncio.run(load_model(model_name, model_path))
+                model, tokenizer = load_model(model_name, model_path)
                 if model and tokenizer:
                     models[model_name] = pipeline('text-generation', model=model, tokenizer=tokenizer, device=0 if torch.cuda.is_available() else -1)
             logger.info("All models loaded successfully.")
@@ -85,7 +84,7 @@ def load_models():
             raise
 
 @app.route('/api/chat', methods=['POST'])
-async def chat():
+def chat():
     """Handle chat request."""
     user_message = request.json.get('message', '').strip()
     if not user_message:
