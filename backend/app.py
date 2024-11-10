@@ -37,8 +37,8 @@ def load_model():
     """Load the FLAN-T5 model and tokenizer."""
     try:
         logger.info(f"Loading FLAN-T5 model from {Config.MODEL_PATH}...")
-        model = AutoModelForSeq2SeqLM.from_pretrained(Config.MODEL_PATH, use_auth_token=Config.HUGGINGFACE_API_KEY)
-        tokenizer = AutoTokenizer.from_pretrained(Config.MODEL_PATH, use_auth_token=Config.HUGGINGFACE_API_KEY)
+        model = AutoModelForSeq2SeqLM.from_pretrained(Config.MODEL_PATH, token=Config.HUGGINGFACE_API_KEY)
+        tokenizer = AutoTokenizer.from_pretrained(Config.MODEL_PATH, token=Config.HUGGINGFACE_API_KEY)
         
         if tokenizer.pad_token is None:
             tokenizer.pad_token = tokenizer.eos_token  # Set padding token to eos token if missing
