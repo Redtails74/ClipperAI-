@@ -104,15 +104,26 @@ def chat():
         for model_name, generator in models.items():
             logger.info(f"Generating response with model: {model_name}")
             
+            # Tokenize and ensure truncation
+            tokenizer = generator.model.config.tokenizer
+            inputs = tokenizer(user_message, return_tensors='pt', truncation=True, padding=True, max_length=512)
+            logger.info(f"Tokenized input: {inputs}")
+
             # Generate the response
-            result = generator(user_message, max_length=150, num_return_sequences=1)
-            if not result:
+            result = generator.model.generate(inputs['input_ids'].cuda() if torch.cuda.is_available() else inputs['input_ids'], 
+                                              max_length=150, 
+                                              num_return_sequences=1)
+            
+            # Decode the response
+            response = tokenizer.decode(result[0], skip_special_tokens=True)
+            logger.info(f"Generated response: {response}")
+            
+            # Check if the response is valid
+            if not response or response.strip() == "":
                 logger.error(f"Failed to generate response with model {model_name}")
                 responses[model_name] = "Error generating response."
                 continue
 
-            response = result[0]['generated_text']
-            
             # Check for repetition and regenerate response if necessary
             if is_repeating(response, user_message):
                 for _ in range(5):  # Try generating again up to 5 times if repetition occurs
