@@ -39,8 +39,10 @@ models = {}
 def load_model(model_name, model_path):
     """Load model and tokenizer synchronously."""
     try:
+        logger.info(f"Loading model {model_name} from {model_path}...")
         model = AutoModelForCausalLM.from_pretrained(model_path, use_auth_token=Config.HUGGINGFACE_API_KEY)
         tokenizer = AutoTokenizer.from_pretrained(model_path, use_auth_token=Config.HUGGINGFACE_API_KEY)
+        
         if tokenizer.pad_token is None:
             tokenizer.pad_token = tokenizer.eos_token or '<pad>'
 
@@ -48,6 +50,7 @@ def load_model(model_name, model_path):
         if torch.cuda.is_available():
             model = model.cuda()
 
+        logger.info(f"Model {model_name} and tokenizer loaded successfully.")
         return model, tokenizer
     except Exception as e:
         logger.error(f"Error loading {model_name}: {e}")
@@ -75,11 +78,11 @@ def initialize_app():
         try:
             # Load each model synchronously
             for model_name, model_path in Config.MODELS.items():
-                logger.info(f"Loading model: {model_name}")
+                logger.info(f"Loading model pipeline for: {model_name}")
                 model, tokenizer = load_model(model_name, model_path)
                 if model and tokenizer:
                     models[model_name] = pipeline('text-generation', model=model, tokenizer=tokenizer, device=0 if torch.cuda.is_available() else -1)
-                    logger.info(f"Model {model_name} loaded successfully.")
+                    logger.info(f"Model pipeline for {model_name} initialized successfully.")
                 else:
                     logger.error(f"Failed to load model {model_name}.")
             logger.info("All models loaded successfully.")
@@ -104,19 +107,20 @@ def chat():
         for model_name, generator in models.items():
             logger.info(f"Generating response with model: {model_name}")
             
-            # Get the tokenizer for the model (don't use model.config)
+            # Get the tokenizer for the model
             tokenizer = models[model_name].tokenizer  # This comes from the pipeline object
             
             # Tokenize the user input and ensure truncation
             inputs = tokenizer(user_message, return_tensors='pt', truncation=True, padding=True, max_length=512)
             logger.info(f"Tokenized input: {inputs}")
-
-            # Generate the response
-            result = generator.model.generate(inputs['input_ids'].cuda() if torch.cuda.is_available() else inputs['input_ids'], 
-                                              max_length=150, 
-                                              num_return_sequences=1)
             
-            # Decode the response
+            # Generate the response
+            with torch.no_grad():
+                # Ensure CUDA device handling is correct
+                input_ids = inputs['input_ids'].cuda() if torch.cuda.is_available() else inputs['input_ids']
+                result = generator.model.generate(input_ids, max_length=150, num_return_sequences=1)
+            
+            # Decode the generated response
             response = tokenizer.decode(result[0], skip_special_tokens=True)
             logger.info(f"Generated response: {response}")
             
