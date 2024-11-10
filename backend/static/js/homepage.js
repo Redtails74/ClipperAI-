@@ -1,15 +1,20 @@
 import React, { useState } from 'react';
-import './HomePage.css'; // Create and style this separately
+import './HomePage.css'; // Ensure this file exists and styles are defined
 
 const HomePage = () => {
     const [input, setInput] = useState('');
     const [chat, setChat] = useState([]);
+    const [loading, setLoading] = useState(false); // Track loading state
 
     const sendMessage = async () => {
         if (!input.trim()) return;
 
+        // Update the chat to show user's message
         updateChat('User', input, 'user-message');
-        updateChat('AI', 'Loading...', 'loading'); // Show loading message
+        
+        // Show the loading message until the response is fetched
+        setLoading(true);
+        updateChat('AI', 'Loading...', 'loading');
 
         try {
             const response = await fetch('/api/chat', {
@@ -22,7 +27,15 @@ const HomePage = () => {
 
             if (response.ok) {
                 const data = await response.json();
-                updateChat('AI', data.response, 'ai-message');
+
+                // Loop over responses and update the chat for each model's response
+                Object.values(data.responses).forEach((responseMessage) => {
+                    updateChat('AI', responseMessage, 'ai-message');
+                });
+
+                // Optionally, update the conversation memory as well if needed
+                // data.conversation.forEach(msg => updateChat(msg.speaker, msg.message, msg.className));
+
             } else {
                 updateChat('Error', response.statusText, 'ai-message');
             }
@@ -30,22 +43,26 @@ const HomePage = () => {
             updateChat('Error', error.message, 'ai-message');
         }
 
+        // Turn off loading after response is processed
+        setLoading(false);
         setInput('');
     };
 
     const updateChat = (speaker, message, className) => {
-        setChat(prevChat => [...prevChat, { speaker, message, className }]);
+        setChat((prevChat) => [...prevChat, { speaker, message, className }]);
     };
 
     return (
         <div id="app">
-            <img src="/path/to/your/logo.jpg" alt="Clipper Logo" />
+            <img src="/static/Code%20Clipper%20Logo-01.jpg" alt="Clipper Logo" /> {/* Adjust the logo path */}
             <textarea
                 value={input}
                 onChange={(e) => setInput(e.target.value)}
                 placeholder="Type your message..."
             />
-            <button onClick={sendMessage}>Send</button>
+            <button onClick={sendMessage} disabled={loading}>
+                {loading ? 'Sending...' : 'Send'}
+            </button>
             <div id="chat">
                 {chat.map((msg, index) => (
                     <div key={index} className={msg.className}>
