@@ -2,10 +2,8 @@ from flask import Flask, request, jsonify, render_template
 from flask_cors import CORS
 from transformers import AutoModelForCausalLM, AutoTokenizer, pipeline
 import logging
-import os
-from collections import deque
 import torch
-import re  # Add this import for regular expressions
+from collections import deque
 
 # Set up Flask app configuration
 class Config:
@@ -64,11 +62,14 @@ def home():
     """Serve the homepage."""
     return render_template('index.html')
 
-def is_repeating(generated_text, user_message):
-    """Check if the generated text is a repetition of the user's message."""
+def is_repeating(generated_text, user_message, previous_responses):
+    """Check if the generated text is a repetition of the user's message or past responses."""
     last_user_input = "user: " + user_message
-    generated_response = generated_text.split('\n')[-1].strip()
-    return last_user_input.lower() in generated_response.lower()
+    # Check against the last few AI responses as well
+    for past_response in previous_responses:
+        if last_user_input.lower() in past_response.lower() or generated_text.lower() in past_response.lower():
+            return True
+    return False
 
 # Initialize application by loading models
 def initialize_app():
@@ -121,22 +122,20 @@ def chat():
             inputs = tokenizer(user_message, return_tensors='pt', truncation=True, padding=True, max_length=512)
             logger.info(f"Tokenized input: {inputs}")
 
-            # Ensure pad_token_id is set (in case it's missing)
-            if tokenizer.pad_token is None:
-                tokenizer.pad_token = tokenizer.eos_token
-
-            # Generate the response with attention mask and pad_token_id explicitly set
+            # Generate the response with temperature and top_p for better variability
             with torch.no_grad():
-                # Ensure CUDA device handling is correct
                 input_ids = inputs['input_ids'].cuda() if torch.cuda.is_available() else inputs['input_ids']
                 attention_mask = inputs['attention_mask'].cuda() if torch.cuda.is_available() else inputs['attention_mask']
 
                 result = model.generate(
                     input_ids,
-                    attention_mask=attention_mask,  # Pass attention mask explicitly
+                    attention_mask=attention_mask,
                     max_length=150,
                     num_return_sequences=1,
-                    pad_token_id=tokenizer.pad_token_id  # Use pad_token_id explicitly
+                    pad_token_id=tokenizer.pad_token_id,
+                    temperature=0.7,  # More randomness
+                    top_p=0.9,  # Use nucleus sampling
+                    top_k=50  # Further restrict token sampling
                 )
 
             # Decode the generated response
@@ -150,13 +149,14 @@ def chat():
                 continue
 
             # Check for repetition and regenerate response if necessary
-            if is_repeating(response, user_message):
-                for _ in range(5):  # Try generating again up to 5 times if repetition occurs
+            previous_responses = [msg.split(": ")[1].strip() for msg in list(conversation_memory)[-5:]]  # Get the last 5 responses
+            if is_repeating(response, user_message, previous_responses):
+                for _ in range(5):  # Try regenerating up to 5 times
                     logger.info(f"Repeating detected for {model_name}, regenerating response...")
                     result = generator(user_message, max_length=150, num_return_sequences=1)
                     if result:
                         response = result[0]['generated_text']
-                    if not is_repeating(response, user_message):
+                    if not is_repeating(response, user_message, previous_responses):
                         break
                 else:
                     response = "I'm sorry, I'm having trouble generating a response. Please try again later."
@@ -182,9 +182,9 @@ def chat():
 
 def filter_inappropriate_words(text):
     """Filters inappropriate words from the generated text."""
-    bad_words = ["badword1", "badword2"]  # Replace with actual words to filter
+    bad_words = ["badword1", "badword2"]  # Replace with actual bad words to filter
     for word in bad_words:
-        text = re.sub(r'\b' + re.escape(word) + r'\b', '[REDACTED]', text, flags=re.IGNORECASE)
+        text = text.replace(word, "[REDACTED]")
     return text
 
 if __name__ == '__main__':
