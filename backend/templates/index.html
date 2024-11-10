@@ -71,6 +71,11 @@
             color: #28a745;
         }
 
+        .loading {
+            font-style: italic;
+            color: #aaa;
+        }
+
         /* Button styles */
         button {
             padding: 10px 20px;
@@ -86,12 +91,6 @@
             background-color: #0056b3;
             transform: scale(1.05);
         }
-
-        /* Loading styles */
-        .loading {
-            font-style: italic;
-            color: #aaa;
-        }
     </style>
 </head>
 <body>
@@ -102,10 +101,6 @@
         <div id="chat"></div>
     </div>
     
-    <script src="{{ url_for('static', filename='js/homepage.js') }}"></script>
-
-</body>
-</html>
     <script>
         const input = document.getElementById('input');
         const sendButton = document.getElementById('send');
@@ -115,8 +110,11 @@
             const message = input.value.trim();
             if (!message) return;
 
+            // Display the user's message in the chat area
             updateChat('User', message, 'user-message');
-            updateChat('AI', 'Loading...', 'loading'); // Show loading message
+
+            // Show loading message for AI
+            updateChat('AI', 'Loading...', 'loading');
 
             try {
                 const response = await fetch('/api/chat', {
@@ -129,7 +127,17 @@
 
                 if (response.ok) {
                     const data = await response.json();
-                    updateChat('AI', data.response, 'ai-message');
+
+                    // Display responses from each model
+                    for (const model in data.responses) {
+                        updateChat(model, data.responses[model], 'ai-message');
+                    }
+
+                    // Optionally, show the full conversation history
+                    data.conversation.forEach(msg => {
+                        updateChat(msg.split(':')[0], msg.split(':')[1].trim(), msg.startsWith('user') ? 'user-message' : 'ai-message');
+                    });
+
                 } else {
                     updateChat('Error', response.statusText, 'ai-message');
                 }
@@ -140,13 +148,15 @@
             input.value = '';
         }
 
+        // Helper function to update the chat window with messages
         function updateChat(speaker, message, className) {
             chatDiv.innerHTML += `<div class="${className}"><strong>${speaker}:</strong> ${message}</div>`;
-            chatDiv.scrollTop = chatDiv.scrollHeight;
+            chatDiv.scrollTop = chatDiv.scrollHeight;  // Scroll to the bottom
         }
 
         sendButton.addEventListener('click', sendMessage);
 
+        // Handle "Enter" key to send message
         input.addEventListener('keypress', function(e) {
             if (e.key === 'Enter' && !e.shiftKey) {
                 sendMessage();
