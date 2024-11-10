@@ -16,7 +16,7 @@ class Config:
         'FlanT5': 'google/flan-t5-small',
         # Add more models here if you want
     }
-    HUGGINGFACE_API_KEY = "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"  # Add your Hugging Face key here
+    HUGGINGFACE_API_KEY = "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"  # Your Hugging Face API key
 
 # Setting up logger
 logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
@@ -67,7 +67,7 @@ def is_repeating(generated_text, user_message):
     generated_response = generated_text.split('\n')[-1].strip()
     return last_user_input.lower() in generated_response.lower()
 
-# Instead of @app.before_first_request, initialize models when the app starts or in an init function
+# Initialize application by loading models
 def initialize_app():
     """Initialize application by loading models."""
     global models
@@ -75,15 +75,19 @@ def initialize_app():
         try:
             # Load each model synchronously
             for model_name, model_path in Config.MODELS.items():
+                logger.info(f"Loading model: {model_name}")
                 model, tokenizer = load_model(model_name, model_path)
                 if model and tokenizer:
                     models[model_name] = pipeline('text-generation', model=model, tokenizer=tokenizer, device=0 if torch.cuda.is_available() else -1)
+                    logger.info(f"Model {model_name} loaded successfully.")
+                else:
+                    logger.error(f"Failed to load model {model_name}.")
             logger.info("All models loaded successfully.")
         except Exception as e:
             logger.error(f"Error loading models: {e}")
             raise
 
-# Call the initialization function when the app is created or here if running as script
+# Initialize models once the app starts
 initialize_app()
 
 @app.route('/api/chat', methods=['POST'])
@@ -98,12 +102,24 @@ def chat():
     try:
         responses = {}
         for model_name, generator in models.items():
-            response = generator(user_message, max_length=100, num_return_sequences=1)[0]['generated_text']
+            logger.info(f"Generating response with model: {model_name}")
+            
+            # Generate the response
+            result = generator(user_message, max_length=150, num_return_sequences=1)
+            if not result:
+                logger.error(f"Failed to generate response with model {model_name}")
+                responses[model_name] = "Error generating response."
+                continue
+
+            response = result[0]['generated_text']
             
             # Check for repetition and regenerate response if necessary
             if is_repeating(response, user_message):
                 for _ in range(5):  # Try generating again up to 5 times if repetition occurs
-                    response = generator(user_message, max_length=100, num_return_sequences=1)[0]['generated_text']
+                    logger.info(f"Repeating detected for {model_name}, regenerating response...")
+                    result = generator(user_message, max_length=150, num_return_sequences=1)
+                    if result:
+                        response = result[0]['generated_text']
                     if not is_repeating(response, user_message):
                         break
                 else:
@@ -137,4 +153,5 @@ def filter_inappropriate_words(text):
 
 if __name__ == '__main__':
     port = int(os.environ.get('PORT', 5000))
+    logger.info(f"Starting app on port {port}")
     app.run(debug=False, port=port, host='0.0.0.0')
