@@ -108,9 +108,9 @@ def regenerate_response(user_message):
         attention_mask=attention_mask,
         max_length=150,
         num_return_sequences=1,
-        temperature=0.6,  # Reduced temperature for more deterministic responses
-        top_p=0.85,       # Reduced top-p for more focused responses
-        top_k=30,         # Reduced top-k for less randomness
+        temperature=0.7,  # Adjust temperature for diversity
+        top_p=0.85,       # Adjust top-p for focused responses
+        top_k=30,         # Reduce top-k to limit randomness
         no_repeat_ngram_size=3,  # Avoid repetition
         early_stopping=True  # Stop when a stopping criterion is met
     )
@@ -132,7 +132,7 @@ def generate_response(user_message):
         # Handle cases where the model might produce suboptimal responses like "Loading..." or empty responses
         if response.strip().lower() == "loading..." or not response.strip():
             logger.warning(f"Model returned an empty or loading response: {response}")
-            response = "I'm having trouble generating a response. Please try again later."
+            response = regenerate_response(user_message)  # Try to regenerate the response if empty or "loading"
         
         # Ensure response coherence by trimming and removing problematic patterns
         response = response.strip()
