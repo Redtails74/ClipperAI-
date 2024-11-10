@@ -84,14 +84,16 @@ def regenerate_response(user_message):
     input_ids = inputs['input_ids'].cuda() if torch.cuda.is_available() else inputs['input_ids']
     attention_mask = inputs['attention_mask'].cuda() if torch.cuda.is_available() else inputs['attention_mask']
 
-    result = model.generate(
+     result = model.generate(
         input_ids,
         attention_mask=attention_mask,
         max_length=150,
         num_return_sequences=1,
-        temperature=0.8,  # More deterministic
-        top_p=0.9,        # Nucleus sampling
+        temperature=0.7,  # More deterministic
+        top_p=0.95,        # Nucleus sampling
         top_k=50,         # Top-k sampling
+        no_repeat_ngram_size=3,  # Avoid repetition
+        early_stopping=True  # Stop when a stopping criterion is met
     )
 
     return tokenizer.decode(result[0], skip_special_tokens=True)
