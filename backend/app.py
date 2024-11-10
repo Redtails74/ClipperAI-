@@ -55,23 +55,6 @@ async def load_model(model_name, model_path):
         logger.error(f"Error loading {model_name}: {e}")
         return None, None
 
-got_first_request = signal('got_first_request')
-
-@got_first_request.connect
-def load_models(sender, **extra):
-    global models
-    if not models:
-        try:
-            # Load each model asynchronously
-            for model_name, model_path in Config.MODELS.items():
-                model, tokenizer = asyncio.run(load_model(model_name, model_path))
-                if model and tokenizer:
-                    models[model_name] = pipeline('text-generation', model=model, tokenizer=tokenizer, device=0 if torch.cuda.is_available() else -1)
-            logger.info("All models loaded successfully.")
-        except Exception as e:
-            logger.error(f"Error loading models: {e}")
-            raise
-
 # Use deque for efficient memory management of conversation history
 conversation_memory = deque(maxlen=Config.MAX_HISTORY)
 
@@ -86,8 +69,25 @@ def is_repeating(generated_text, user_message):
     generated_response = generated_text.split('\n')[-1].strip()
     return last_user_input.lower() in generated_response.lower()
 
+@signal('got_first_request')
+def load_models(sender, **extra):
+    """Load models on first request."""
+    global models
+    if not models:
+        try:
+            # Load each model asynchronously using await
+            for model_name, model_path in Config.MODELS.items():
+                model, tokenizer = asyncio.run(load_model(model_name, model_path))
+                if model and tokenizer:
+                    models[model_name] = pipeline('text-generation', model=model, tokenizer=tokenizer, device=0 if torch.cuda.is_available() else -1)
+            logger.info("All models loaded successfully.")
+        except Exception as e:
+            logger.error(f"Error loading models: {e}")
+            raise
+
 @app.route('/api/chat', methods=['POST'])
 async def chat():
+    """Handle chat request."""
     user_message = request.json.get('message', '').strip()
     if not user_message:
         return jsonify({'error': 'No input message provided'}), 400
