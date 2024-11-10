@@ -1,10 +1,11 @@
-import os
+from transformers import AutoModelForSeq2SeqLM, AutoTokenizer, pipeline
+import torch
+import random
 from flask import Flask, request, jsonify, render_template, g
 from flask_cors import CORS
-from transformers import AutoModelForSeq2SeqLM, AutoTokenizer, pipeline
 import logging
 from collections import deque
-import torch
+import os
 
 class Config:
     MAX_HISTORY = 10
@@ -12,7 +13,7 @@ class Config:
     HUGGINGFACE_API_KEY = os.environ.get("HUGGINGFACE_API_KEY", "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")
 
 # Configuration
-app = Flask(__name__, 
+app = Flask(__name__,
             static_url_path='/static',
             static_folder='../static',
             template_folder='./templates')
