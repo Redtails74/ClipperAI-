@@ -1,8 +1,8 @@
+import random
 from flask import Flask, request, jsonify, render_template
 from flask_cors import CORS
 from transformers import AutoModelForCausalLM, AutoModelForSeq2SeqLM, AutoTokenizer, pipeline
 import logging
-import os
 import torch
 from collections import deque
 
@@ -61,42 +61,6 @@ def load_model(model_name, model_path):
             return load_model("DialoGPT", "microsoft/DialoGPT-small")
         return None, None
 
-# Use deque for efficient memory management of conversation history
-conversation_memory = deque(maxlen=Config.MAX_HISTORY)
-
-@app.route('/')
-def home():
-    """Serve the homepage."""
-    return render_template('index.html')
-
-def is_repeating(response, user_message, previous_responses):
-    """Check if the generated response is too similar to previous responses."""
-    return response in previous_responses or response == user_message
-
-def regenerate_response(model, user_message, tokenizer, model_name):
-    """Try regenerating the response in case of repetition."""
-    logger.info(f"Regenerating response for {model_name}...")
-
-    # Tokenize the input
-    inputs = tokenizer(user_message, return_tensors='pt', truncation=True, padding=True, max_length=512)
-    input_ids = inputs['input_ids'].cuda() if torch.cuda.is_available() else inputs['input_ids']
-    attention_mask = inputs['attention_mask'].cuda() if torch.cuda.is_available() else inputs['attention_mask']
-
-    # Set diverse parameters for regeneration (e.g., temperature, top_p)
-    result = model.generate(
-        input_ids,
-        attention_mask=attention_mask,
-        max_length=150,
-        num_return_sequences=1,
-        pad_token_id=tokenizer.pad_token_id,
-        temperature=0.9,  # Higher temperature for more randomness
-        top_p=0.9,        # Top-p (nucleus sampling) to get more diverse responses
-        top_k=50,         # Restrict token sampling to top-k
-    )
-
-    response = tokenizer.decode(result[0], skip_special_tokens=True)
-    return response
-
 # Initialize application by loading models
 def initialize_app():
     """Initialize application by loading models."""
@@ -124,6 +88,42 @@ def initialize_app():
 
 # Initialize models once the app starts
 initialize_app()
+
+@app.route('/')
+def home():
+    """Serve the homepage."""
+    return render_template('index.html')
+
+def is_repeating(response, user_message, previous_responses):
+    """Check if the generated response is too similar to previous responses."""
+    return response in previous_responses or response == user_message
+
+def regenerate_response(model, user_message, tokenizer, model_name):
+    """Try regenerating the response in case of repetition with adjusted parameters."""
+    logger.info(f"Regenerating response for {model_name}...")
+
+    # Tokenize the input
+    inputs = tokenizer(user_message, return_tensors='pt', truncation=True, padding=True, max_length=512)
+    input_ids = inputs['input_ids'].cuda() if torch.cuda.is_available() else inputs['input_ids']
+    attention_mask = inputs['attention_mask'].cuda() if torch.cuda.is_available() else inputs['attention_mask']
+
+    # Set diverse parameters for regeneration (e.g., temperature, top_p)
+    result = model.generate(
+        input_ids,
+        attention_mask=attention_mask,
+        max_length=150,
+        num_return_sequences=1,
+        pad_token_id=tokenizer.pad_token_id,
+        temperature=random.uniform(0.7, 1.2),  # Randomize temperature for more variation
+        top_p=random.uniform(0.8, 0.95),       # Randomize top-p for more diversity
+        top_k=random.randint(30, 70),          # Randomize top-k to avoid stuck responses
+    )
+
+    response = tokenizer.decode(result[0], skip_special_tokens=True)
+    return response
+
+# Use deque for efficient memory management of conversation history
+conversation_memory = deque(maxlen=Config.MAX_HISTORY)
 
 @app.route('/api/chat', methods=['POST'])
 def chat():
