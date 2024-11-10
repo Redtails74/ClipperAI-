@@ -89,9 +89,9 @@ def regenerate_response(user_message):
         attention_mask=attention_mask,
         max_length=150,
         num_return_sequences=1,
-        temperature=0.7,  # More deterministic
-        top_p=0.95,        # Nucleus sampling
-        top_k=50,         # Top-k sampling
+        temperature=0.6,  # Reduced temperature for more deterministic responses
+        top_p=0.85,       # Reduced top-p for more focused responses
+        top_k=30,         # Reduced top-k for less randomness
         no_repeat_ngram_size=3,  # Avoid repetition
         early_stopping=True  # Stop when a stopping criterion is met
     )
