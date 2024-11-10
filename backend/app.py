@@ -9,7 +9,7 @@ from collections import deque
 class Config:
     MAX_HISTORY = 10
     MODELS = {
-        'grok1': 'Grok-1',  # Assuming Grok-1 is available in Hugging Face
+        'grok1': 'allenai/grok',  # Updated Grok model path
         'DialoGPT': 'microsoft/DialoGPT-small',
         'FlanT5': 'google/flan-t5-small',
         # Add more models here if you want
