@@ -70,6 +70,23 @@ def home():
     """Serve the homepage."""
     return render_template('index.html')
 
+@app.route('/api/chat', methods=['POST'])
+def chat():
+    """Handle chat interactions via POST request."""
+    try:
+        user_message = request.json.get('message')
+        if not user_message:
+            return jsonify({"error": "No message provided"}), 400
+        
+        # Generate a response based on the user's message
+        response = generate_response(user_message)
+        
+        # Return the response as JSON
+        return jsonify({"response": response})
+    except Exception as e:
+        logger.error(f"Error in /api/chat: {e}")
+        return jsonify({"error": "An error occurred while processing the request."}), 500
+
 def is_repeating(response, user_message, previous_responses):
     """Check if the generated response is too similar to previous responses."""
     return response in previous_responses or response == user_message
