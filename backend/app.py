@@ -106,6 +106,7 @@ def generate_response(user_message):
         conversation_history = ' '.join([msg.split(": ")[1].strip() for msg in list(g.conversation_memory)])
         prompt = f"Given the conversation so far: {conversation_history} Answer the following question logically: {user_message}"
         
+        # Generate response using the pipeline
         response = pipeline(prompt, max_length=150)[0]['generated_text']
 
         # Handle cases where the model might produce suboptimal responses like "Loading..." or empty responses
