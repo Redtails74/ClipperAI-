@@ -1,6 +1,6 @@
 from flask import Flask, request, jsonify, render_template
 from flask_cors import CORS
-from transformers import AutoModelForCausalLM, AutoTokenizer, pipeline
+from transformers import AutoModelForCausalLM, AutoTokenizer, pipeline, AutoModelForSeq2SeqLM
 import logging
 import torch
 from collections import deque
@@ -38,7 +38,10 @@ def load_model(model_name, model_path):
     """Load model and tokenizer synchronously."""
     try:
         logger.info(f"Loading model {model_name} from {model_path}...")
-        model = AutoModelForCausalLM.from_pretrained(model_path, use_auth_token=Config.HUGGINGFACE_API_KEY)
+        if model_name == 'FlanT5':
+            model = AutoModelForSeq2SeqLM.from_pretrained(model_path, use_auth_token=Config.HUGGINGFACE_API_KEY)
+        else:
+            model = AutoModelForCausalLM.from_pretrained(model_path, use_auth_token=Config.HUGGINGFACE_API_KEY)
         tokenizer = AutoTokenizer.from_pretrained(model_path, use_auth_token=Config.HUGGINGFACE_API_KEY)
         
         if tokenizer.pad_token is None:
@@ -83,11 +86,18 @@ def initialize_app():
                 model, tokenizer = load_model(model_name, model_path)
                 if model and tokenizer:
                     # Store both model and tokenizer separately
-                    models[model_name] = {
-                        'model': model,
-                        'tokenizer': tokenizer,
-                        'pipeline': pipeline('text-generation', model=model, tokenizer=tokenizer, device=0 if torch.cuda.is_available() else -1)
-                    }
+                    if model_name == 'FlanT5':
+                        models[model_name] = {
+                            'model': model,
+                            'tokenizer': tokenizer,
+                            'pipeline': pipeline('text2text-generation', model=model, tokenizer=tokenizer, device=0 if torch.cuda.is_available() else -1)
+                        }
+                    else:
+                        models[model_name] = {
+                            'model': model,
+                            'tokenizer': tokenizer,
+                            'pipeline': pipeline('text-generation', model=model, tokenizer=tokenizer, device=0 if torch.cuda.is_available() else -1)
+                        }
                     logger.info(f"Model pipeline for {model_name} initialized successfully.")
                 else:
                     logger.error(f"Failed to load model {model_name}.")
