@@ -127,12 +127,10 @@ def generate_response(user_message, use_greedy=True):
         # Ensure response coherence by trimming and removing problematic patterns
         response = response.strip()
 
-        # Check for duplicate user message and avoid adding it again
-        if len(g.conversation_memory) == 0 or g.conversation_memory[-2].split(": ")[1].strip() != user_message.strip():
-            g.conversation_memory.append(f"User: {user_message}")
-
-        # Store only Clipper's response
-        g.conversation_memory.append(f"Clipper: {response}")
+        # Only store Clipper's response (Not the User's)
+        if len(g.conversation_memory) == 0 or g.conversation_memory[-1].split(": ")[1].strip() != user_message.strip():
+            # Store Clipper's response only
+            g.conversation_memory.append(f"Clipper: {response}")
 
         return response
     except Exception as e:
