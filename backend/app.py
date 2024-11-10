@@ -7,7 +7,6 @@ from collections import deque
 import re
 import torch
 import asyncio
-from blinker import signal
 
 # Set up Flask app configuration
 class Config:
@@ -69,9 +68,9 @@ def is_repeating(generated_text, user_message):
     generated_response = generated_text.split('\n')[-1].strip()
     return last_user_input.lower() in generated_response.lower()
 
-@signal('got_first_request')
-def load_models(sender, **extra):
-    """Load models on first request."""
+@app.before_first_request
+def load_models():
+    """Load models on the first request."""
     global models
     if not models:
         try:
