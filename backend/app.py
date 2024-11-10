@@ -97,12 +97,14 @@ def regenerate_response(user_message):
     return tokenizer.decode(result[0], skip_special_tokens=True)
 
 def generate_response(user_message):
-    """Generate a response from FLAN-T5 with improvements for coherence."""
+    """Generate a response from FLAN-T5 with improved logic."""
     try:
         pipeline = model_info['pipeline']
         
-        # Adjust the prompt to encourage more logical responses
-        prompt = f"Answer the following question logically and coherently: {user_message}"
+        # Include conversation context to improve response coherence
+        conversation_history = ' '.join([msg.split(": ")[1].strip() for msg in list(g.conversation_memory)])
+        prompt = f"Given the conversation so far: {conversation_history} Answer the following question logically: {user_message}"
+        
         response = pipeline(prompt, max_length=150)[0]['generated_text']
 
         # Handle cases where the model might produce suboptimal responses like "Loading..." or empty responses
@@ -110,7 +112,7 @@ def generate_response(user_message):
             logger.warning(f"Model returned an empty or loading response: {response}")
             response = "I'm having trouble generating a response. Please try again later."
         
-        # Ensure response coherence by fixing minor inconsistencies or unexpected responses
+        # Ensure response coherence by trimming and removing problematic patterns
         response = response.strip()
 
         # Optional: Further filtering to remove unwanted phrases or characters
